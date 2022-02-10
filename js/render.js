@@ -54,7 +54,7 @@ const createScene =  () => {
     const hero = BABYLON.Mesh.CreateBox('hero', 2.0, scene, false, BABYLON.Mesh.FRONTSIDE);
     hero.position.x = 0.0;
     hero.position.y = 1;
-    hero.position.z = -14.0;
+    hero.position.z = -25.0;
     hero.physicsImpostor = new BABYLON.PhysicsImpostor(hero, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 1, restitution: 0.0, friction: 0.1 }, scene);		
     //hero.physicsImpostor.physicsBody.fixedRotation = true;
     // hero.physicsImpostor.physicsBody.updateMassProperties();
@@ -430,7 +430,9 @@ const createScene =  () => {
         result.meshes[0].rotationQuaternion = null;
         result.meshes[0].rotate(BABYLON.Vector3.Up(),Math.PI/2);    
     });
-    scene.debugLayer.show();
+    
+    //Enable to see the inspector
+    //scene.debugLayer.show();
     return scene;
 }
 
