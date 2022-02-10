@@ -1,0 +1,80 @@
+Exporter version: 2.93.5, Blender version: 2.93.7
+========= Conversion from Blender to Babylon.js =========
+	Scene settings used :
+		Inline textures     :  false
+		Material Type       :  PBR
+		Positions Precision :  4
+		Normals Precision   :  3
+		UVs Precision       :  3
+		Vert Color Precision:  3
+		Mat Weight Precision:  2
+		Keep Z-up r-handed  :  no
+		Texture directory   :  C:\Users\aniru\Desktop\babylon\
+	Python World class constructor completed
+	WARNING: No active camera has been assigned, or is not in a currently enabled collection
+	processing begun of camera (UniversalCamera):  Camera
+	processing begun of mesh:  Button_Circle
+		processing begun of material:  button.001
+
+ERROR: UN-EXCEPTED NODE TYPE(SHADERNODENORMALMAP).  CANNOT CONTINUE.
+
+			bake time:  0 min, 0.0545 secs
+		Custom split normals with tangents being used
+		num positions      :  3194
+		num normals        :  3194
+		num tangents       :  12776
+		num uvs            :  6388
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  5248
+		WARNING: # of 0 area faces found:  16
+	processing begun of mesh:  clipart21628
+		processing begun of material:  clipart21628.001
+
+ERROR: UN-EXCEPTED NODE TYPE(SHADERNODENORMALMAP).  CANNOT CONTINUE.
+
+			processing texture clipart21628
+				WARNING: Exception during copy:
+					[Errno 2] No such file or directory: 'C:\\Courses\\Lab\\2021\\3D Models\\Users\\christophechin\\Downloads\\clipart21628.png'
+				texture type:  diffuseTexture, mapped using: "UVMap"
+			bake time:  0 min, 0.0094 secs
+		Custom split normals with tangents being used
+		num positions      :  4
+		num normals        :  4
+		num tangents       :  16
+		num uvs            :  8
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  2
+	processing begun of mesh:  kisspng-dinosaur-museum-brainpop-science-fossil-dino-5ac58aa13e
+		processing begun of material:  kisspng-dinosaur-museum-brainpop-science-fossil-dino-5ac58a
+
+ERROR: UN-EXCEPTED NODE TYPE(SHADERNODENORMALMAP).  CANNOT CONTINUE.
+
+			processing texture kisspng_dinosaur_museum_brainpop_science_fossil_dino_5ac58aa13e0d66_6534483215228955212542
+				WARNING: Exception during copy:
+					[Errno 2] No such file or directory: 'C:\\Courses\\Lab\\2021\\3D Models\\Users\\christophechin\\Downloads\\kisspng-dinosaur-museum-brainpop-science-fossil-dino-5ac58aa13e0d66.6534483215228955212542.png'
+				texture type:  diffuseTexture, mapped using: "UVMap"
+			bake time:  0 min, 0.0059 secs
+		Custom split normals with tangents being used
+		num positions      :  4
+		num normals        :  4
+		num tangents       :  16
+		num uvs            :  8
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  2
+	processing begun of mesh:  Fossils_final
+		processing begun of material:  Plaster (1)
+		num positions      :  9249296
+		num normals        :  9249296
+		num tangents       :  36997184
+		num uvs            :  0
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  18491480
+		WARNING: # of 0 area faces found:  2
+	processing begun of light (POINT):  Light
+	Output cancelled due to data error
+========= end of processing =========
+elapsed time:  550 min, 18.989 secs
