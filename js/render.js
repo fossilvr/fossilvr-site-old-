@@ -1,43 +1,90 @@
 
 const canvas = document.getElementById("renderCanvas"); // Get the canvas element
-const engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
+const engine = new BABYLON.Engine(canvas, true,{ stencil: true }); // Generate the BABYLON 3D engine
 
 const createScene =  () => {
+    //-------VARIABLES-------------------------------
+    var picked = false;
+    var pickUpR1, pickUpR2, pickUpR3, pickUpR4, pickUpR5, pickUpR6;
+
+    //-----------SCENE INITIALIZATIONS------------------------
     const scene = new BABYLON.Scene(engine);
     scene.enablePhysics();
     scene.ambientColor = new BABYLON.Color3(1,1,1);
     scene.gravity = new BABYLON.Vector3(0, -.75, 0); 
     scene.collisionsEnabled = true;
     
-    
-    // Parameters : name, position, scene
+
+
+    //---------------CAMERAS----------------------------------
     var camera = new BABYLON.UniversalCamera("UniversalCamera", new BABYLON.Vector3(0, 0, -10), scene);
-
-    // // Targets the camera to a particular position. In this case the scene origin
     camera.setTarget(BABYLON.Vector3.Zero());
-
-    // // Attach the camera to the canvas
-    camera.applyGravity = true;
+    //camera.applyGravity = true;
     camera.ellipsoid = new BABYLON.Vector3(.4, .8, .4);
     camera.checkCollisions = true;
-    camera.attachControl(canvas, true); 
+    camera.attachControl(canvas, true);
+    camera.speed = 5;
 
-    // const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 3, new BABYLON.Vector3(0, 40,-120), scene);
-    // camera.attachControl(canvas, true);
+    var camera2 = new BABYLON.ArcRotateCamera("Camera2", -Math.PI/2, 0.5, 70, BABYLON.Vector3.Zero(), scene);
+    scene.activeCameras = [];
+    scene.activeCameras.push(camera);
+    camera2.layerMask = 0;
 
-    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(10, 50, 30));
+    //--------------------LIGHTS-----------------------------
+    //Hemispherical light can't cast shadows
+    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0));
+    light.intensity = 0.05;
+    var light2 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -2, 1), scene);
+    light2.position = new BABYLON.Vector3(100,50,0);
+    light2.intensity = 0.9;
     //var light2 = new BABYLON.SpotLight("spotLight", new BABYLON.Vector3(3, 2.5, 8), new BABYLON.Vector3(0, 0, -1), Math.PI / 3, 2, scene);
 
-    //----GROUND-----
+    //------------------SHADOWS----------------------------------------
+    var shadowGenerator = new BABYLON.ShadowGenerator(1024, light2);
+    shadowGenerator.usePercentageCloserFiltering = true;
+    shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_MEDIUM;
+
+    //-----------------GROUND----------------------------
     const ground = BABYLON.MeshBuilder.CreateGround("ground", {width:100, height:100});
     const groundMat = new BABYLON.StandardMaterial("groundMat");
     groundMat.diffuseColor = new BABYLON.Color3(199/255, 119/255, 44/255);
     ground.material = groundMat; //Place the material property of the ground
     ground.checkCollisions= true;
     ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 0.5, friction:0.1 }, scene);
+    ground.receiveShadows = true;
+
+    //-----------------WALLS----------------------------
+
+    const wall1 = BABYLON.MeshBuilder.CreatePlane("Wall1", {width: 200, height: 200} );
+    wall1.position = new BABYLON.Vector3(0,0,-30);
+    wall1.rotation = new BABYLON.Vector3(0,Math.PI,0);
+    wall1.checkCollisions= true;
+    wall1.physicsImpostor = new BABYLON.PhysicsImpostor(wall1, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 0.5, friction:0.1 }, scene);
+
+    const wall2 = BABYLON.MeshBuilder.CreatePlane("Wall2", {width: 200, height: 200} );
+    wall2.position = new BABYLON.Vector3(0,0,33);
+    wall2.rotation = new BABYLON.Vector3(0,0,0);
+    wall2.checkCollisions= true;
+    wall2.physicsImpostor = new BABYLON.PhysicsImpostor(wall2, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 0.5, friction:0.1 }, scene);
+
+    const wall3 = BABYLON.MeshBuilder.CreatePlane("wall3", {width: 200, height: 200} );
+    wall3.position = new BABYLON.Vector3(30,0,33);
+    wall3.rotation = new BABYLON.Vector3(0,Math.PI/2,0);
+    wall3.checkCollisions= true;
+    wall3.physicsImpostor = new BABYLON.PhysicsImpostor(wall3, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 0.5, friction:0.1 }, scene);
+
+    const wall4 = BABYLON.MeshBuilder.CreatePlane("wall4", {width: 200, height: 200} );
+    wall4.position = new BABYLON.Vector3(-30,0,33);
+    wall4.rotation = new BABYLON.Vector3(0,-Math.PI/2,0);
+    wall4.checkCollisions= true;
+    wall4.physicsImpostor = new BABYLON.PhysicsImpostor(wall4, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 0.5, friction:0.1 }, scene);
+    wall1.isVisible = false;
+    wall2.isVisible = false;
+    wall3.isVisible = false;
+    wall4.isVisible = false;
 
 
-    //----SKYBOX----
+    //-----------------SKYBOX----------------------------
     var skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 1000.0 }, scene);
     var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
     skyboxMaterial.backFaceCulling = false;
@@ -47,15 +94,49 @@ const createScene =  () => {
     skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
     skybox.material = skyboxMaterial;
 
-    var pickUpR1, pickUpR2, pickUpR3, pickUpR4, pickUpR5, pickUpR6;
+    //-----------------HIGHLIGHT LAYER----------------------------
+    var hl = new BABYLON.HighlightLayer("hl1", scene);
+    
+    
 
-    //Player
 
-    const hero = BABYLON.Mesh.CreateBox('hero', 2.0, scene, false, BABYLON.Mesh.FRONTSIDE);
+    //--------------------MAP----------------------------------
+    var rt2 = new BABYLON.RenderTargetTexture("depth", 2048, scene, true, true);
+    scene.customRenderTargets.push(rt2);
+	rt2.activeCamera = camera2;
+    rt2.renderList = scene.meshes;
+
+    var mon2 = BABYLON.Mesh.CreatePlane("plane", 5, scene);
+    mon2.position = new BABYLON.Vector3(canvas.width/130, canvas.height/150, 20)
+    var mon2mat = new BABYLON.StandardMaterial("texturePlane", scene);
+    mon2mat.diffuseColor = new BABYLON.Color3(1,1,1);
+    mon2mat.diffuseTexture = rt2;
+    mon2mat.specularColor = BABYLON.Color3.Black();
+
+    // mon2mat.diffuseTexture.uScale = 1; // zoom
+    // mon2mat.diffuseTexture.vScale = 1;
+
+    // mon2mat.diffuseTexture.level = 1.2; // intensity
+
+    mon2mat.emissiveColor = new BABYLON.Color3(1,1,1); // backlight
+	mon2.material = mon2mat;
+	mon2.parent = camera;
+	// mon2.parent = camera;
+	mon2.layerMask = 1;
+
+	// mon2.enableEdgesRendering(epsilon);	 
+	mon2.edgesWidth = 5.0;
+	mon2.edgesColor = new BABYLON.Color4(1, 1, 1, 1);
+
+
+
+    //---------------PLAYER----------------------------------
+    const hero = BABYLON.Mesh.CreateBox('hero', 1.0, scene, false, BABYLON.Mesh.FRONTSIDE);
     hero.position.x = 0.0;
     hero.position.y = 1;
     hero.position.z = -25.0;
-    hero.physicsImpostor = new BABYLON.PhysicsImpostor(hero, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 1, restitution: 0.0, friction: 0.1 }, scene);		
+    hero.physicsImpostor = new BABYLON.PhysicsImpostor(hero, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 1, restitution: 0.0, friction: 0.1 }, scene);	
+    hero.isPickable = false;	
     //hero.physicsImpostor.physicsBody.fixedRotation = true;
     // hero.physicsImpostor.physicsBody.updateMassProperties();
 
@@ -70,7 +151,8 @@ const createScene =  () => {
     var moveBackward = false;
     var moveRight = false;
     var moveLeft = false;
-    
+    var currMesh;
+    var startingPoint;
     var onKeyDown = function (event) {
         switch (event.keyCode) {
             case 38: // up
@@ -125,7 +207,9 @@ const createScene =  () => {
     document.addEventListener('keyup', onKeyUp, false);
     
     
-    scene.registerBeforeRender(function () {         
+    scene.registerBeforeRender(function () {  
+        
+
         camera.position.x = hero.position.x;
         camera.position.y = hero.position.y + 0.5;
         camera.position.z = hero.position.z;
@@ -186,17 +270,81 @@ const createScene =  () => {
       }
     }*/
 
-    //Mouse
+    //------------MOUSE AND KEYBOARD---------------------------
 	var isLocked = false;
+    
+    var pickedUp = false;
+    //TODO: MAKE OTHER MESHES UNPICKABLE; HIGHLIGHT PICKED MESH
 	scene.onPointerDown = function (evt) {
-		
+        console.log(pickedUp);
+		if(pickedUp){
+            hl.removeMesh(currMesh);
+            currMesh = null;
+            console.log(currMesh);
+            pickedUp = false;
+            
+        }
+        else{
+            var pos = {x:camera.position.x + 1.1, y:camera.position.y, z:camera.position.z};
+            var forward = camera.getTarget().subtract(camera.position).normalize();
+            var ray = new BABYLON.Ray(camera.position,forward,5);	
+            var hit = scene.pickWithRay(ray, function(mesh){
+             if(mesh == pickUpR1 || mesh== pickUpR2 || mesh==pickUpR3 || mesh==pickUpR4 || mesh==pickUpR5 || mesh ==pickUpR6) return true;
+             return false;
+         });
+            if(hit.pickedMesh){
+                currMesh = hit.pickedMesh;
+                //currMesh.makeGeometryUnique();
+                startingPoint = hit.pickedPoint;
+                pickedUp = true;
+
+                hl.addMesh(currMesh.subMeshes[0].getRenderingMesh(), BABYLON.Color3.Green());
+               
+            }
+        }
+
 		if (!isLocked) {
 			canvas.requestPointerLock = canvas.requestPointerLock || canvas.msRequestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
 			if (canvas.requestPointerLock) {
 				canvas.requestPointerLock();
 			}
 		}
+        
+        
+        
 	};
+
+    //Why isnt this working?
+    var debugShow = false;
+    scene.onKeyboardObservable.add((kbInfo) => {
+		switch (kbInfo.type) {
+			case BABYLON.KeyboardEventTypes.KEYDOWN:
+				switch (kbInfo.event.key) {
+                    case "m":
+                    case "M":
+                        if(debugShow==false)
+                        scene.debugLayer.show();
+                        else
+                        scene.debugLayer.hide();
+                    break;
+                    case "n":
+                    case "N":
+                        scene.debugLayer.hide();
+                    break;
+                }
+			break;
+		}
+	});
+      
+    scene.onPointerMove = function(evt){
+        var forward = camera.getTarget().subtract(camera.position).normalize();
+        if(currMesh){
+        currMesh.position = camera.position + camera.cameraDirection *1.5;
+        const cameraForwardRay = camera.getForwardRay();
+        
+        currMesh.position = camera.position.add(cameraForwardRay.direction);
+        }
+    };
 	
 	var pointerlockchange = function () {
 		var controlEnabled = document.mozPointerLockElement || document.webkitPointerLockElement || document.msPointerLockElement || document.pointerLockElement || null;
@@ -210,6 +358,23 @@ const createScene =  () => {
 			isLocked = true;
 		}
 	};
+
+    // var canvasPtrDown = function(evt){
+    // var forward = camera.getTarget().subtract(camera.position).normalize();
+    // var ray = new BABYLON.Ray(camera.position,forward,100);	
+    // var hit = scene.pickWithRay(ray);
+	// var rayHelper = new BABYLON.RayHelper(ray);	
+    //  rayHelper.show(scene);
+    //     console.log(rayHelper, BABYLON.Color3(0,0,0));
+    //     if(hit.pickedMesh){
+    //         currMesh = hit.pickedMesh;
+    //         startingPoint = hit.pickedPoint;
+    //     }
+    //     currMesh.position.x = startingPoint.x;
+    //     currMesh.position.y = startingPoint.y;
+    //     currMesh.position.z = startingPoint.z;
+    //     startingPoint = currMesh.position;
+    // }
 	
 	// Attach events to the document
 	document.addEventListener("pointerlockchange", pointerlockchange, false);
@@ -217,16 +382,23 @@ const createScene =  () => {
 	document.addEventListener("mozpointerlockchange", pointerlockchange, false);
 	document.addEventListener("webkitpointerlockchange", pointerlockchange, false);
 
+    //canvas.addEventListener("pointermove", canvasPtrDown, false);
+    
 
-    // --------FLAG -------------
+
+    // -------------------------------FLAG -------------------------
     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/1_flag.glb").then((result) => {
             result.meshes[0].position.x = 5;
             result.meshes[0].position.z = -15;   
             result.meshes[0].rotation.y = Math.PI/4;
+            result.meshes.forEach(function (mesh) {
+                shadowGenerator.getShadowMap().renderList.push(mesh);
+            });
+            result.meshes[0].isPickable = true;
     });
 
 
-    //---------TENT--------------------
+    //----------------------------TENT-----------------------------------
 
     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/3_tent.glb").then((result) => {
         result.meshes[0].position.z = 6;
@@ -234,19 +406,30 @@ const createScene =  () => {
         result.meshes[0].scaling = new BABYLON.Vector3(2.5, 2.5, -2.5);
 
         result.meshes[0].rotationQuaternion = null;
-        result.meshes[0].rotate.y =Math.PI/2;     
+        result.meshes[0].rotate.y =Math.PI/2;    
+        //shadowGenerator.addShadowCaster(result.meshes[0]);
+        result.meshes[0].getChildMeshes().forEach((m)=>{
+            m.isPickable = false;
+            shadowGenerator.getShadowMap().renderList.push(m);
+        });
     });
 
+
+    //----------------------------MAMMOTH-----------------------------------
     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/11_mammoth.glb").then((result) => {
         result.meshes[0].position.z = 6;
         result.meshes[0].position.x = -14;
         result.meshes[0].scaling = new BABYLON.Vector3(0.075, 0.075, 0.075);
-
+        result.meshes[0].isPickable = false;
             result.meshes[0].rotationQuaternion = null;
-            result.meshes[0].rotate.y =-Math.PI/2;     
+            result.meshes[0].rotate.y =-Math.PI/2;
+            result.meshes[0].getChildMeshes().forEach((m)=>{
+                m.isPickable = false;
+                shadowGenerator.getShadowMap().renderList.push(m);
+            });     
     });
 
-     // ------ DESERT PLANTS --------
+     //----------------------------DESERT PLANTS-----------------------------------
      BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/6_desertplants.glb").then((result) => {
         result.meshes[0].position.z = 6;
         result.meshes[0].position.x = 15;
@@ -259,9 +442,13 @@ const createScene =  () => {
         rock03.isVisible = false;
         rock07.isVisible = false;
         const cactus01 = scene.getMeshByName("Cactus_01_cactus01");
+        shadowGenerator.getShadowMap().renderList.push(cactus01);
         const cactus02 = scene.getMeshByName("Cactuss_02_cactus02");
+        shadowGenerator.getShadowMap().renderList.push(cactus02);
         const cactus03 = scene.getMeshByName("Cactus_03_cactus03");
+        shadowGenerator.getShadowMap().renderList.push(cactus03);
         const aloe01 = scene.getMeshByName("Aloe._01_aloe.002");
+        shadowGenerator.getShadowMap().renderList.push(aloe01);
         // cactus01.isVisible = false;
         // cactus02.isVisible = false;
         // cactus03.isVisible = false;
@@ -275,6 +462,9 @@ const createScene =  () => {
         const c11 = cactus01.createInstance("c11");
         const c12 = cactus01.createInstance("c12");
         const c13 = cactus01.createInstance("c13");
+        shadowGenerator.getShadowMap().renderList.push(c11);
+        shadowGenerator.getShadowMap().renderList.push(c12);
+        shadowGenerator.getShadowMap().renderList.push(c13);
 
         c11.position = new BABYLON.Vector3(15,0,-20);
         c12.position = new BABYLON.Vector3(-20,0,-14);
@@ -283,6 +473,9 @@ const createScene =  () => {
         const c21 = cactus02.createInstance("c21");
         const c22 = cactus02.createInstance("c22");
         const c23 = cactus02.createInstance("c23");
+        shadowGenerator.getShadowMap().renderList.push(c21);
+        shadowGenerator.getShadowMap().renderList.push(c22);
+        shadowGenerator.getShadowMap().renderList.push(c23);
 
         c21.position = new BABYLON.Vector3(-13,0,-10);
         c22.position = new BABYLON.Vector3(-30,0,-14);
@@ -291,6 +484,9 @@ const createScene =  () => {
         const c31 = cactus03.createInstance("c31");
         const c32 = cactus03.createInstance("c32");
         const c33 = cactus03.createInstance("c33");
+        shadowGenerator.getShadowMap().renderList.push(c31);
+        shadowGenerator.getShadowMap().renderList.push(c32);
+        shadowGenerator.getShadowMap().renderList.push(c33);
 
         c31.position = new BABYLON.Vector3(34,0,-21);
         c32.position = new BABYLON.Vector3(-21,0,-3);
@@ -299,6 +495,9 @@ const createScene =  () => {
         const a31 = aloe01.createInstance("a31");
         const a32 = aloe01.createInstance("a32");
         const a33 = aloe01.createInstance("a33");
+        shadowGenerator.getShadowMap().renderList.push(a31);
+        shadowGenerator.getShadowMap().renderList.push(a32);
+        shadowGenerator.getShadowMap().renderList.push(a33);
 
         a31.position = new BABYLON.Vector3(15,0,-21);
         a32.position = new BABYLON.Vector3(-20,0,-3);
@@ -374,7 +573,12 @@ const createScene =  () => {
         pickUpR5 = rock07.createInstance("pickUpR5");
         pickUpR6 = rock07.createInstance("pickUpR6");
 
-        
+        pickUpR1.applyGravity = true;
+        pickUpR2.applyGravity = true;
+        pickUpR3.applyGravity = true;
+        pickUpR4.applyGravity = true;
+        pickUpR5.applyGravity = true;
+        pickUpR6.applyGravity = true;
 
         pickUpR1.scaling = new BABYLON.Vector3(0.3,0.5,0.15);
         pickUpR2.scaling = new BABYLON.Vector3(0.25,0.6,0.17);
@@ -411,7 +615,7 @@ const createScene =  () => {
      BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/10_hannah_waving.glb").then((result) => {
         result.meshes[0].position.z = 4;
         result.meshes[0].position.x = 7;
-        
+        result.meshes[0].isPickable = false;
 
             result.meshes[0].rotationQuaternion = null;
             result.meshes[0].rotate.y =Math.PI/2;     
@@ -422,17 +626,93 @@ const createScene =  () => {
         result.meshes[0].position.x = 2;
         result.meshes[0].position.z = 4.85;
         result.meshes[0].position.y = 0.3;
-
+        result.meshes[0].isPickable = false;
         var fossil = scene.getMeshByName("13637_Triceratops_Skull_Fossil_v1_L2");
+        fossil.checkCollisions = true;
+        //Under rock coordinates
         fossil.position.x = 27.8;
         fossil.position.y = -0.5;
         fossil.position.z = -5.3;
+
+        //Outside rocks, for testing purposes
+
         result.meshes[0].rotationQuaternion = null;
         result.meshes[0].rotate(BABYLON.Vector3.Up(),Math.PI/2);    
     });
+
+    //----------------- CROSSHAIR ------------------------
+    function addCrosshair(scene){
+        let w = 128
+
+        let texture = new BABYLON.DynamicTexture('reticule', w, scene, false)
+        texture.hasAlpha = true
+
+        let ctx = texture.getContext()
+        let reticule
+
+        const createOutline = () => {
+        let c = 2
+
+        ctx.moveTo(c, w * 0.25)
+        ctx.lineTo(c, c)
+        ctx.lineTo(w * 0.25, c)
+
+        ctx.moveTo(w * 0.75, c)
+        ctx.lineTo(w - c, c)
+        ctx.lineTo(w - c, w * 0.25)
+
+        ctx.moveTo(w - c, w * 0.75)
+        ctx.lineTo(w - c, w - c)
+        ctx.lineTo(w * 0.75, w - c)
+
+        ctx.moveTo(w * 0.25, w - c)
+        ctx.lineTo(c, w - c)
+        ctx.lineTo(c, w * 0.75)
+
+        ctx.lineWidth = 1.5
+        ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'
+        ctx.stroke()
+        }
+
+        const createNavigate = () => {
+        ctx.fillStyle = 'transparent'
+        ctx.clearRect(0, 0, w, w)
+        createOutline()
+
+        ctx.strokeStyle = 'rgba(170, 255, 0, 0.9)'
+        ctx.lineWidth = 3.5
+        ctx.moveTo(w * 0.5, w * 0.25)
+        ctx.lineTo(w * 0.5, w * 0.75)
+
+        ctx.moveTo(w * 0.25, w * 0.5)
+        ctx.lineTo(w * 0.75, w * 0.5)
+        ctx.stroke()
+        ctx.beginPath()
+
+        texture.update()
+        }
+
+        createNavigate()
+
+        let material = new BABYLON.StandardMaterial('reticule', scene)
+        material.diffuseTexture = texture
+        material.opacityTexture = texture
+        material.emissiveColor.set(1, 1, 1)
+        material.disableLighting = true
+
+        let plane = BABYLON.MeshBuilder.CreatePlane('reticule', { size: 0.04 }, scene)
+        plane.material = material
+        plane.position.set(0, 0, 1.1)
+        plane.isPickable = false
+        plane.rotation.z = Math.PI / 4
+
+        reticule = plane
+        reticule.parent = camera
+        return reticule;
+    }
+
+    let reticule = addCrosshair(scene);
     
-    //Enable to see the inspector
-    //scene.debugLayer.show();
     return scene;
 }
 
