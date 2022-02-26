@@ -5,7 +5,10 @@ const engine = new BABYLON.Engine(canvas, true,{ stencil: true }); // Generate t
 const createScene =  () => {
     //-------VARIABLES-------------------------------
     var picked = false;
+    var mapVisible = false;
+    var journalVisible = false;
     var pickUpR1, pickUpR2, pickUpR3, pickUpR4, pickUpR5, pickUpR6;
+    var aspectRatio = screen.width/screen.height;
 
     //-----------SCENE INITIALIZATIONS------------------------
     const scene = new BABYLON.Scene(engine);
@@ -24,11 +27,12 @@ const createScene =  () => {
     camera.checkCollisions = true;
     camera.attachControl(canvas, true);
     camera.speed = 5;
+    camera.layerMask = 1;
 
-    var camera2 = new BABYLON.ArcRotateCamera("Camera2", -Math.PI/2, 0.5, 70, BABYLON.Vector3.Zero(), scene);
+    var camera2 = new BABYLON.ArcRotateCamera("Camera2", -Math.PI/2, 0.5, 150, BABYLON.Vector3.Zero(), scene);
     scene.activeCameras = [];
     scene.activeCameras.push(camera);
-    camera2.layerMask = 0;
+    //camera2.layerMask = 0;
 
     //--------------------LIGHTS-----------------------------
     //Hemispherical light can't cast shadows
@@ -36,7 +40,7 @@ const createScene =  () => {
     light.intensity = 0.05;
     var light2 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -2, 1), scene);
     light2.position = new BABYLON.Vector3(100,50,0);
-    light2.intensity = 0.9;
+    light2.intensity = 2.0;
     //var light2 = new BABYLON.SpotLight("spotLight", new BABYLON.Vector3(3, 2.5, 8), new BABYLON.Vector3(0, 0, -1), Math.PI / 3, 2, scene);
 
     //------------------SHADOWS----------------------------------------
@@ -52,6 +56,7 @@ const createScene =  () => {
     ground.checkCollisions= true;
     ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 0.5, friction:0.1 }, scene);
     ground.receiveShadows = true;
+    ground.layerMask = 1;
 
     //-----------------WALLS----------------------------
 
@@ -97,37 +102,140 @@ const createScene =  () => {
     //-----------------HIGHLIGHT LAYER----------------------------
     var hl = new BABYLON.HighlightLayer("hl1", scene);
     
-    
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+    //Pointer stuff, make sure it isnt moving around on loading the journal
+    var journalPlane = new BABYLON.GUI.Image("but", "assets/ui/Journal1.png");
+    journalPlane.width = "100%";
+    journalPlane.height = "100%";
+    journalPlane.verticalAlignment = 1;
+    advancedTexture.addControl(journalPlane);   
+    journalPlane.isVisible = false; 
+
 
 
     //--------------------MAP----------------------------------
-    var rt2 = new BABYLON.RenderTargetTexture("depth", 2048, scene, true, true);
+    var rt2 = new BABYLON.RenderTargetTexture("depth", 1024, scene, true, true);
     scene.customRenderTargets.push(rt2);
 	rt2.activeCamera = camera2;
     rt2.renderList = scene.meshes;
 
-    var mon2 = BABYLON.Mesh.CreatePlane("plane", 5, scene);
-    mon2.position = new BABYLON.Vector3(canvas.width/130, canvas.height/150, 20)
+    
+    var mon2 = BABYLON.Mesh.CreatePlane("plane", 6, scene);
+    // mon2.position = new BABYLON.Vector3(canvas.width/640, canvas.height/480, 20)
+    mon2.position = new BABYLON.Vector3(0, 0, 10)
     var mon2mat = new BABYLON.StandardMaterial("texturePlane", scene);
-    mon2mat.diffuseColor = new BABYLON.Color3(1,1,1);
+    mon2mat.diffuseColor = new BABYLON.Color3(0,1,1);
     mon2mat.diffuseTexture = rt2;
     mon2mat.specularColor = BABYLON.Color3.Black();
+    mon2mat.ambientColor = new BABYLON.Color3(0.5,1,0);
 
-    // mon2mat.diffuseTexture.uScale = 1; // zoom
-    // mon2mat.diffuseTexture.vScale = 1;
-
-    // mon2mat.diffuseTexture.level = 1.2; // intensity
+     mon2mat.diffuseTexture.uScale = 1/aspectRatio; // zoom
+     //mon2mat.diffuseTexture.vScale = 1;
+    mon2mat.diffuseTexture.uOffset = 1.215;
+     mon2mat.diffuseTexture.level = 1.2; // intensity
 
     mon2mat.emissiveColor = new BABYLON.Color3(1,1,1); // backlight
 	mon2.material = mon2mat;
 	mon2.parent = camera;
-	// mon2.parent = camera;
+	mon2.parent = camera;
 	mon2.layerMask = 1;
 
 	// mon2.enableEdgesRendering(epsilon);	 
 	mon2.edgesWidth = 5.0;
 	mon2.edgesColor = new BABYLON.Color4(1, 1, 1, 1);
+    mon2.isVisible = false;
 
+    //------------------UI-------------------------------------
+
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI");
+    
+    var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but","", "assets/ui/Button1.png");
+    button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    button1.width = 0.06;
+    button1.height = 0.06*aspectRatio;
+    button1.left = -canvas.width+canvas.width/1.05;
+    button1.top = canvas.height - canvas.height/1.05;
+    button1.thickness = 0; 
+
+
+    var button2 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/Button2.png");
+    button2.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    button2.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    button2.width = 0.06;
+    button2.height = 0.06*aspectRatio;
+    button2.left = -canvas.width+canvas.width/1.05;
+    button2.top = canvas.height - canvas.height/1.2;
+    button2.thickness = 0; 
+
+    var button3 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/Group 53.png");
+    button3.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    button3.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    button3.width = 0.06;
+    button3.height = 0.06*aspectRatio;
+    button3.left = -canvas.width+canvas.width/1.05;
+    button3.top = canvas.height - canvas.height/1.4;
+    button3.thickness = 0;
+
+    var input = new BABYLON.GUI.InputText();
+    input.width = 0.3;
+    input.maxWidth = 0.05;
+    input.height = "40px";
+    input.top = canvas.height/2-canvas.height/2.15;
+    input.left = canvas.width/2 - canvas.width/3.4;
+    input.text = "";
+    input.color = "white";
+    input.background = "black";
+    input.thickness = 2;
+    input.isVisible = false;
+
+    var input2 = new BABYLON.GUI.InputText();
+    input2.width = 0.3;
+    input2.maxWidth = 0.05;
+    input2.height = "40px";
+    input2.top = canvas.height/2-canvas.height/4.4;
+    input2.left = canvas.width/2 - canvas.width/3.4;
+    input2.text = "";
+    input2.color = "white";
+    input2.background = "black";
+    input2.isVisible = false;
+    
+
+    button2.onPointerUpObservable.add(function() {
+        if(!journalVisible){
+        journalPlane.isVisible = true;
+        input.isVisible = true;
+        input2.isVisible = true;
+        journalVisible = true;
+        
+    }
+        else{
+        input.isVisible = false;
+        journalPlane.isVisible = false;
+        input2.isVisible = false;
+        journalVisible = false;
+    }
+    });
+
+    button3.onPointerUpObservable.add(function() {
+        if(!mapVisible){
+        mon2.isVisible = true;
+        mapVisible = true;
+    }
+        else{
+        mon2.isVisible = false;
+        mapVisible = false;
+    }
+    });
+
+    
+
+    advancedTexture.addControl(button1); 
+    advancedTexture.addControl(button2); 
+    advancedTexture.addControl(button3);
+    advancedTexture.addControl(input);
+    advancedTexture.addControl(input2);
 
 
     //---------------PLAYER----------------------------------
@@ -303,12 +411,12 @@ const createScene =  () => {
             }
         }
 
-		if (!isLocked) {
-			canvas.requestPointerLock = canvas.requestPointerLock || canvas.msRequestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
-			if (canvas.requestPointerLock) {
-				canvas.requestPointerLock();
-			}
-		}
+		// if (!isLocked) {
+		// 	canvas.requestPointerLock = canvas.requestPointerLock || canvas.msRequestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
+		// 	if (canvas.requestPointerLock) {
+		// 		canvas.requestPointerLock();
+		// 	}
+		// }
         
         
         
@@ -346,18 +454,18 @@ const createScene =  () => {
         }
     };
 	
-	var pointerlockchange = function () {
-		var controlEnabled = document.mozPointerLockElement || document.webkitPointerLockElement || document.msPointerLockElement || document.pointerLockElement || null;
+	// var pointerlockchange = function () {
+	// 	var controlEnabled = document.mozPointerLockElement || document.webkitPointerLockElement || document.msPointerLockElement || document.pointerLockElement || null;
 		
-		// If the user is already locked
-		if (!controlEnabled) {
-			//camera.detachControl(canvas);
-			isLocked = false;
-		} else {
-			//camera.attachControl(canvas);
-			isLocked = true;
-		}
-	};
+	// 	// If the user is already locked
+	// 	if (!controlEnabled) {
+	// 		//camera.detachControl(canvas);
+	// 		isLocked = false;
+	// 	} else {
+	// 		//camera.attachControl(canvas);
+	// 		isLocked = true;
+	// 	}
+	// };
 
     // var canvasPtrDown = function(evt){
     // var forward = camera.getTarget().subtract(camera.position).normalize();
@@ -377,10 +485,10 @@ const createScene =  () => {
     // }
 	
 	// Attach events to the document
-	document.addEventListener("pointerlockchange", pointerlockchange, false);
-	document.addEventListener("mspointerlockchange", pointerlockchange, false);
-	document.addEventListener("mozpointerlockchange", pointerlockchange, false);
-	document.addEventListener("webkitpointerlockchange", pointerlockchange, false);
+	// document.addEventListener("pointerlockchange", pointerlockchange, false);
+	// document.addEventListener("mspointerlockchange", pointerlockchange, false);
+	// document.addEventListener("mozpointerlockchange", pointerlockchange, false);
+	// document.addEventListener("webkitpointerlockchange", pointerlockchange, false);
 
     //canvas.addEventListener("pointermove", canvasPtrDown, false);
     
