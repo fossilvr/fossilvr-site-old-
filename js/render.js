@@ -7,9 +7,11 @@ const createScene =  () => {
     var picked = false;
     var mapVisible = false;
     var journalVisible = false;
-    var pickUpR1, pickUpR2, pickUpR3, pickUpR4, pickUpR5, pickUpR6;
+    var pickUpR1, pickUpR2, pickUpR3, pickUpR4, pickUpR5, pickUpR6,pickUpSkull;
     var aspectRatio = screen.width/screen.height;
-
+    var hannah;
+    var dialogueCounter = 1;
+    var originalPlace = new BABYLON.Vector3(0,0,2);
     //-----------SCENE INITIALIZATIONS------------------------
     const scene = new BABYLON.Scene(engine);
     scene.enablePhysics();
@@ -29,32 +31,65 @@ const createScene =  () => {
     camera.speed = 5;
     camera.layerMask = 1;
 
-    var camera2 = new BABYLON.ArcRotateCamera("Camera2", -Math.PI/2, 0.5, 150, BABYLON.Vector3.Zero(), scene);
+    var camera2 = new BABYLON.ArcRotateCamera("Camera2", -Math.PI/2, 0.5, 110, BABYLON.Vector3.Zero(), scene);
     scene.activeCameras = [];
     scene.activeCameras.push(camera);
+    BABYLON.Effect.ShadersStore["customFragmentShader"] = `
+    #ifdef GL_ES
+        precision highp float;
+    #endif
+
+    // Samplers
+    varying vec2 vUV;
+    uniform sampler2D textureSampler;
+
+    // Parameters
+    uniform vec2 screenSize;
+    uniform float threshold;
+
+    void main(void) 
+    {
+        vec2 texelSize = vec2(1.0 / screenSize.x, 1.0 / screenSize.y);
+        vec4 baseColor = texture2D(textureSampler, vUV);
+
+
+        if (baseColor.g < threshold) {
+            gl_FragColor = baseColor;
+        } else {
+            gl_FragColor = vec4(0);
+        }
+    }
+    `;
+
+    var postProcess = new BABYLON.PostProcess("My custom post process", "custom", ["screenSize", "threshold"], null, 0.25, camera2);
+    postProcess.onApply = function (effect) {
+        effect.setFloat2("screenSize", postProcess.width, postProcess.height);
+        effect.setFloat("threshold", 1.0);
+    };
     //camera2.layerMask = 0;
 
     //--------------------LIGHTS-----------------------------
     //Hemispherical light can't cast shadows
-    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0));
-    light.intensity = 0.05;
-    var light2 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -2, 1), scene);
-    light2.position = new BABYLON.Vector3(100,50,0);
-    light2.intensity = 2.0;
+    //const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0));
+    //light.intensity = 0.05;
+    var light2 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -0.8, 0.4), scene);
+    light2.position = new BABYLON.Vector3(0,20,10);
+    light2.intensity = 2.4;
     //var light2 = new BABYLON.SpotLight("spotLight", new BABYLON.Vector3(3, 2.5, 8), new BABYLON.Vector3(0, 0, -1), Math.PI / 3, 2, scene);
 
     //------------------SHADOWS----------------------------------------
-    var shadowGenerator = new BABYLON.ShadowGenerator(1024, light2);
+    var shadowGenerator = new BABYLON.ShadowGenerator(2048, light2);
     shadowGenerator.usePercentageCloserFiltering = true;
     shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_MEDIUM;
 
     //-----------------GROUND----------------------------
     const ground = BABYLON.MeshBuilder.CreateGround("ground", {width:100, height:100});
     const groundMat = new BABYLON.StandardMaterial("groundMat");
-    groundMat.diffuseColor = new BABYLON.Color3(199/255, 119/255, 44/255);
+    groundMat.diffuseColor = new BABYLON.Color3(119/255, 110/255, 34/255);
+    //groundMat.diffuseTexture = new BABYLON.Texture("assets/stone_ground.jpg");
     ground.material = groundMat; //Place the material property of the ground
     ground.checkCollisions= true;
-    ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, restitution: 0.5, friction:0.1 }, scene);
+    ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.PlaneImpostor, { mass: 0, restitution: 0.5, friction:0.1 }, scene);
     ground.receiveShadows = true;
     ground.layerMask = 1;
 
@@ -99,6 +134,27 @@ const createScene =  () => {
     skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
     skybox.material = skyboxMaterial;
 
+    //-------------------MUSIC-------------------------------
+
+    // var music = new BABYLON.Sound("Music", "assets/sounds/Ashara Ambience.ogg", scene, null, {
+    //     loop: true,
+    //     autoplay: true,
+    //     volume: 0.1
+    //   });
+    var intro1 = new BABYLON.Sound("intro1", "assets/sounds/Introduction1.ogg", scene,function() {
+        // Sound has been downloaded & decoded
+        intro1.play();
+      });
+    
+    var intro2 = new BABYLON.Sound("intro2", "assets/sounds/Introduction2.ogg", scene);
+    var intro3 = new BABYLON.Sound("intro3", "assets/sounds/Introduction3.ogg", scene);
+    var intro4 = new BABYLON.Sound("intro4", "assets/sounds/Introduction4.ogg", scene);
+    var intro5 = new BABYLON.Sound("intro5", "assets/sounds/Introduction5.ogg", scene);
+    var intro6 = new BABYLON.Sound("intro6", "assets/sounds/Introduction6.ogg", scene);
+    var intro7 = new BABYLON.Sound("intro7", "assets/sounds/Introduction7.ogg", scene);
+    var intro8 = new BABYLON.Sound("intro8", "assets/sounds/Introduction8.ogg", scene);
+    var intro9 = new BABYLON.Sound("intro9", "assets/sounds/Introduction9.ogg", scene);
+
     //-----------------HIGHLIGHT LAYER----------------------------
     var hl = new BABYLON.HighlightLayer("hl1", scene);
     
@@ -139,7 +195,8 @@ const createScene =  () => {
 	mon2.material = mon2mat;
 	mon2.parent = camera;
 	mon2.parent = camera;
-	mon2.layerMask = 1;
+    mon2.renderingGroupId = 1;
+	//mon2.layerMask = 1;
 
 	// mon2.enableEdgesRendering(epsilon);	 
 	mon2.edgesWidth = 5.0;
@@ -229,6 +286,89 @@ const createScene =  () => {
     }
     });
 
+    var button4 = BABYLON.GUI.Button.CreateSimpleButton("button", "Next");
+    button4.top = "35%";
+    button4.left = "40%";
+    button4.width = "150px";
+    button4.height = "50px";
+    button4.cornerRadius = 20;
+    button4.thickness = 4;
+    button4.children[0].color = "#DFF9FB";
+    button4.children[0].fontSize = 24;
+    button4.color = "#FF7979";
+    button4.background = "#EB4D4B";
+
+    var dispBut = BABYLON.GUI.Button.CreateSimpleButton("button", "Hello, I'm Hannah and I'm a paleontologist.");
+    dispBut.top = "35%";
+    dispBut.left = "0%";
+    dispBut.width = "60%";
+    dispBut.height = "20%";
+    dispBut.cornerRadius = 20;
+    dispBut.thickness = 4;
+    dispBut.children[0].color = "#DFF9FB";
+    dispBut.children[0].fontSize = 24;
+    dispBut.color = "#000000";
+    dispBut.background = "#303236";
+
+    
+
+    button4.onPointerUpObservable.add(function() {
+        switch(dialogueCounter){
+
+                    case 1: 
+                    intro1.stop();
+                    dispBut.textBlock.text = "Welcome to the Ashara Desert. We are here to find fossils.";
+                    intro2.play();
+                    dialogueCounter++;
+                    break;
+                    case 2: 
+                    intro2.stop();
+                    dispBut.textBlock.text = "A paleontologist is someone who studies plants and animals that lived millions of years ago. I look at fossils to help me learn what life was like when that plant or animal was alive.";
+                    intro3.play();
+                    dialogueCounter++;
+                    break;
+                    case 3: 
+                    intro3.stop();
+                    dispBut.textBlock.text = "I spend a lot of time out in the field looking for fossils. I find them all over the world. That is why I need your help!";
+                    intro4.play();
+                    dialogueCounter++;
+                    break;
+                    case 4: 
+                    intro4.stop();
+                    dispBut.textBlock.text = "Many new fossils have been found in the Ashara Desert, and I need you to help me find them and learn from them."
+                    intro5.play();
+                    dialogueCounter++;
+                    break;
+                    case 5: 
+                    intro5.stop();
+                    dispBut.textBlock.text = "I make observations and inferences about the fossils I find. Observations are things that we can notice with our five senses! Let me show you an example from an animal that is still alive today!"
+                    intro6.play();
+                    dialogueCounter++;
+                    break;
+                    case 6: 
+                    intro6.stop();
+                    dispBut.textBlock.text = "Look at this chameleon’s skin! What do you observe or notice about it?"
+                    intro7.play();
+                    dialogueCounter++;
+                    break;
+                    case 7: 
+                    intro7.stop();
+                    dispBut.textBlock.text = "I observe that the chameleon skin is green with yellow spots. Now let’s make an inference about the chameleon. An inference is when you use clues and what you know to make a guess about something."
+                    intro8.play();
+                    dialogueCounter++;
+                    break;
+                    case 8: 
+                    intro8.stop();
+                    intro9.play();
+                    dispBut.textBlock.text = "I think that the chameleon has green skin with yellow spots to help it blend in or camouflage with its surroundings. This is important, because its skin helps it to hide from animals that may try to harm it!"
+                    dialogueCounter++;
+                    advancedTexture.removeControl(button4);
+                    advancedTexture.removeControl(dispBut);
+                    break;
+
+        }
+    });
+
     
 
     advancedTexture.addControl(button1); 
@@ -236,6 +376,8 @@ const createScene =  () => {
     advancedTexture.addControl(button3);
     advancedTexture.addControl(input);
     advancedTexture.addControl(input2);
+
+    
 
 
     //---------------PLAYER----------------------------------
@@ -386,6 +528,7 @@ const createScene =  () => {
 	scene.onPointerDown = function (evt) {
         console.log(pickedUp);
 		if(pickedUp){
+            currMesh.physicsImpostor.wakeUp();
             hl.removeMesh(currMesh);
             currMesh = null;
             console.log(currMesh);
@@ -397,13 +540,14 @@ const createScene =  () => {
             var forward = camera.getTarget().subtract(camera.position).normalize();
             var ray = new BABYLON.Ray(camera.position,forward,5);	
             var hit = scene.pickWithRay(ray, function(mesh){
-             if(mesh == pickUpR1 || mesh== pickUpR2 || mesh==pickUpR3 || mesh==pickUpR4 || mesh==pickUpR5 || mesh ==pickUpR6) return true;
+             if(mesh == pickUpR1 || mesh== pickUpR2 || mesh==pickUpR3 || mesh==pickUpR4 || mesh==pickUpR5 || mesh ==pickUpR6 || mesh==pickUpSkull) return true;
              return false;
          });
             if(hit.pickedMesh){
+                hit.pickedMesh.physicsImpostor.sleep();
                 currMesh = hit.pickedMesh;
+                startingPoint = currMesh.position;
                 //currMesh.makeGeometryUnique();
-                startingPoint = hit.pickedPoint;
                 pickedUp = true;
 
                 hl.addMesh(currMesh.subMeshes[0].getRenderingMesh(), BABYLON.Color3.Green());
@@ -445,12 +589,14 @@ const createScene =  () => {
 	});
       
     scene.onPointerMove = function(evt){
-        var forward = camera.getTarget().subtract(camera.position).normalize();
+        //var forward = camera.getTarget().subtract(camera.position).normalize();
         if(currMesh){
-        currMesh.position = camera.position + camera.cameraDirection *1.5;
+        //currMesh.position = camera.position + camera.cameraDirection *1.5;
         const cameraForwardRay = camera.getForwardRay();
         
-        currMesh.position = camera.position.add(cameraForwardRay.direction);
+        currMesh.position = camera.position.add(cameraForwardRay.direction.normalize());
+        //currMesh.position = camera.position.subtract(startingPoint);
+        startingPoint = currMesh.position;
         }
     };
 	
@@ -674,12 +820,32 @@ const createScene =  () => {
         r36.position = new BABYLON.Vector3(20,0,-40);
         r46.position = new BABYLON.Vector3(40,0,-40);
 
-        pickUpR1 = rock07.createInstance("pickUpR1");
-        pickUpR2 = rock07.createInstance("pickUpR2");
-        pickUpR3 = rock07.createInstance("pickUpR3");
-        pickUpR4 = rock07.createInstance("pickUpR4");
-        pickUpR5 = rock07.createInstance("pickUpR5");
-        pickUpR6 = rock07.createInstance("pickUpR6");
+        // pickUpR1 = rock07.createInstance("pickUpR1");
+        // pickUpR2 = rock07.createInstance("pickUpR2");
+        // pickUpR3 = rock07.createInstance("pickUpR3");
+        // pickUpR4 = rock07.createInstance("pickUpR4");
+        // pickUpR5 = rock07.createInstance("pickUpR5");
+        // pickUpR6 = rock07.createInstance("pickUpR6");
+
+        pickUpR1 = rock07.clone("pickUpR1");
+        pickUpR1.setParent(null);
+        pickUpR2 = rock07.clone("pickUpR2");
+        pickUpR2.setParent(null);
+        pickUpR3 = rock07.clone("pickUpR3");
+        pickUpR3.setParent(null);
+        pickUpR4 = rock07.clone("pickUpR4");
+        pickUpR4.setParent(null);
+        pickUpR5 = rock07.clone("pickUpR5");
+        pickUpR5.setParent(null);
+        pickUpR6 = rock07.clone("pickUpR6");
+        pickUpR6.setParent(null);
+
+        pickUpR1.isVisible = true;
+        pickUpR2.isVisible = true;
+        pickUpR3.isVisible = true;
+        pickUpR4.isVisible = true;
+        pickUpR5.isVisible = true;
+        pickUpR6.isVisible = true;        
 
         pickUpR1.applyGravity = true;
         pickUpR2.applyGravity = true;
@@ -695,12 +861,19 @@ const createScene =  () => {
         pickUpR5.scaling = new BABYLON.Vector3(0.39,0.4,0.13);
         pickUpR6.scaling = new BABYLON.Vector3(0.4,0.5,0.19);
 
-        pickUpR1.position = new BABYLON.Vector3(5,0,-14);
-        pickUpR2.position = new BABYLON.Vector3(5.3,0,-14.3);
-        pickUpR3.position = new BABYLON.Vector3(5.1,0,-15);
-        pickUpR4.position = new BABYLON.Vector3(5.2,0,-15.2);
-        pickUpR5.position = new BABYLON.Vector3(4.9,0,-14.6);
-        pickUpR6.position = new BABYLON.Vector3(5.2,0,-14.2);
+        pickUpR1.position = new BABYLON.Vector3(5,1,-14);
+        pickUpR2.position = new BABYLON.Vector3(5.3,1,-14.3);
+        pickUpR3.position = new BABYLON.Vector3(5.1,1,-15);
+        pickUpR4.position = new BABYLON.Vector3(5.2,1,-15.2);
+        pickUpR5.position = new BABYLON.Vector3(4.9,1,-14.6);
+        pickUpR6.position = new BABYLON.Vector3(5.2,1,-14.2);
+
+        pickUpR1.physicsImpostor = new BABYLON.PhysicsImpostor(pickUpR1, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 1, restitution: 0, friction: 0.1 }, scene);	
+        pickUpR2.physicsImpostor = new BABYLON.PhysicsImpostor(pickUpR2, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 1, restitution: 0, friction: 0.1 }, scene);	
+        pickUpR3.physicsImpostor = new BABYLON.PhysicsImpostor(pickUpR3, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 1, restitution: 0, friction: 0.1 }, scene);	
+        pickUpR4.physicsImpostor = new BABYLON.PhysicsImpostor(pickUpR4, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 1, restitution: 0, friction: 0.1 }, scene);	
+        pickUpR5.physicsImpostor = new BABYLON.PhysicsImpostor(pickUpR5, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 1, restitution: 0, friction: 0.1 }, scene);	
+        pickUpR6.physicsImpostor = new BABYLON.PhysicsImpostor(pickUpR6, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 1, restitution: 0, friction: 0.1 }, scene);	
         var sixDofDragBehavior = new BABYLON.SixDofDragBehavior()
         pickUpR1.addBehavior(sixDofDragBehavior)
         var multiPointerScaleBehavior = new BABYLON.MultiPointerScaleBehavior()
@@ -726,7 +899,8 @@ const createScene =  () => {
         result.meshes[0].isPickable = false;
 
             result.meshes[0].rotationQuaternion = null;
-            result.meshes[0].rotate.y =Math.PI/2;     
+            result.meshes[0].rotate.y =Math.PI/2;   
+        hannah = result.meshes[0];  
     });
     // ------ DESERT PLANTS --------
     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/pal.glb").then((result) => {
@@ -741,7 +915,12 @@ const createScene =  () => {
         fossil.position.x = 27.8;
         fossil.position.y = -0.5;
         fossil.position.z = -5.3;
-
+        pickUpSkull = fossil;
+        pickUpSkull.setParent(null);
+        pickUpSkull.position = new BABYLON.Vector3(5.2,0,-15)
+        pickUpSkull.physicsImpostor = new BABYLON.PhysicsImpostor(pickUpR1, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 1, restitution: 0, friction: 0.1 }, scene);
+        pickUpSkull.applyGravity = true;
+        
         //Outside rocks, for testing purposes
 
         result.meshes[0].rotationQuaternion = null;
@@ -789,13 +968,18 @@ const createScene =  () => {
 
         ctx.strokeStyle = 'rgba(170, 255, 0, 0.9)'
         ctx.lineWidth = 3.5
-        ctx.moveTo(w * 0.5, w * 0.25)
-        ctx.lineTo(w * 0.5, w * 0.75)
+        // ctx.moveTo(0,0)
+        // ctx.lineTo(w, w)
 
-        ctx.moveTo(w * 0.25, w * 0.5)
-        ctx.lineTo(w * 0.75, w * 0.5)
-        ctx.stroke()
+        // ctx.moveTo(w*0.5, w)
+        // ctx.lineTo(w*0.5, w*0.25)
+        // ctx.stroke()
         ctx.beginPath()
+        ctx.arc(w*0.5, w*0.5, 20, 0, 2 * Math.PI);
+        ctx.fillStyle = "rgba(0, 255, 0, 0.4)";
+        ctx.fill();
+        ctx.stroke();
+        
 
         texture.update()
         }
@@ -820,7 +1004,14 @@ const createScene =  () => {
     }
 
     let reticule = addCrosshair(scene);
-    
+    console.log(BABYLON.Vector3.Distance(camera.position, originalPlace));
+    console.log(camera.position);
+    //if(BABYLON.Vector3.Distance(hero.position, originalPlace)< 20){
+        advancedTexture.addControl(button4);
+        advancedTexture.addControl(dispBut);
+
+     //   }
+
     return scene;
 }
 
