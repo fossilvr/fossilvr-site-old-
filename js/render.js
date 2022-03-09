@@ -136,11 +136,11 @@ const createScene =  () => {
 
     //-------------------MUSIC-------------------------------
 
-    // var music = new BABYLON.Sound("Music", "assets/sounds/Ashara Ambience.ogg", scene, null, {
-    //     loop: true,
-    //     autoplay: true,
-    //     volume: 0.1
-    //   });
+    var music = new BABYLON.Sound("Music", "assets/sounds/Ashara Ambience.ogg", scene, null, {
+        loop: true,
+        autoplay: true,
+        volume: 0.1
+      });
     var intro1 = new BABYLON.Sound("intro1", "assets/sounds/Introduction1.ogg", scene,function() {
         // Sound has been downloaded & decoded
         intro1.play();
