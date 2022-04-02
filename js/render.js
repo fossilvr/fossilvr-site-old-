@@ -1,7 +1,7 @@
 
 const canvas = document.getElementById("renderCanvas"); // Get the canvas element
 const engine = new BABYLON.Engine(canvas, true,{ stencil: true }); // Generate the BABYLON 3D engine
-
+var hannah;
 const createScene =  () => {
     //-------VARIABLES-------------------------------
     var picked = false;
@@ -9,9 +9,13 @@ const createScene =  () => {
     var journalVisible = false;
     var pickUpR1, pickUpR2, pickUpR3, pickUpR4, pickUpR5, pickUpR6,pickUpSkull;
     var aspectRatio = screen.width/screen.height;
-    var hannah;
-    var dialogueCounter = 1;
+    var playedIntro = false;
+    var dialogueCounter = 0;
     var originalPlace = new BABYLON.Vector3(0,0,2);
+    var xPressed = false;
+    var yPressed = false;
+    var zPressed = false;
+
     //-----------SCENE INITIALIZATIONS------------------------
     const scene = new BABYLON.Scene(engine);
     scene.enablePhysics();
@@ -24,48 +28,49 @@ const createScene =  () => {
     //---------------CAMERAS----------------------------------
     var camera = new BABYLON.UniversalCamera("UniversalCamera", new BABYLON.Vector3(0, 0, -10), scene);
     camera.setTarget(BABYLON.Vector3.Zero());
-    //camera.applyGravity = true;
-    camera.ellipsoid = new BABYLON.Vector3(.4, .8, .4);
-    camera.checkCollisions = true;
+    
+    // camera.ellipsoid = new BABYLON.Vector3(.4, .8, .4);
+    // camera.checkCollisions = true;
     camera.attachControl(canvas, true);
-    camera.speed = 5;
-    camera.layerMask = 1;
+    // camera.speed = 5;
+    // camera.layerMask = 1;
+    camera.inertia = 0.5;
 
-    var camera2 = new BABYLON.ArcRotateCamera("Camera2", -Math.PI/2, 0.5, 110, BABYLON.Vector3.Zero(), scene);
-    scene.activeCameras = [];
-    scene.activeCameras.push(camera);
-    BABYLON.Effect.ShadersStore["customFragmentShader"] = `
-    #ifdef GL_ES
-        precision highp float;
-    #endif
+    // var camera2 = new BABYLON.ArcRotateCamera("Camera2", -Math.PI/2, 0.5, 110, BABYLON.Vector3.Zero(), scene);
+    // scene.activeCameras = [];
+    // scene.activeCameras.push(camera);
+    // BABYLON.Effect.ShadersStore["customFragmentShader"] = `
+    // #ifdef GL_ES
+    //     precision highp float;
+    // #endif
 
-    // Samplers
-    varying vec2 vUV;
-    uniform sampler2D textureSampler;
+    // // Samplers
+    // varying vec2 vUV;
+    // uniform sampler2D textureSampler;
 
-    // Parameters
-    uniform vec2 screenSize;
-    uniform float threshold;
+    // // Parameters
+    // uniform vec2 screenSize;
+    // uniform float threshold;
 
-    void main(void) 
-    {
-        vec2 texelSize = vec2(1.0 / screenSize.x, 1.0 / screenSize.y);
-        vec4 baseColor = texture2D(textureSampler, vUV);
+    // void main(void) 
+    // {
+    //     vec2 texelSize = vec2(1.0 / screenSize.x, 1.0 / screenSize.y);
+    //     vec4 baseColor = texture2D(textureSampler, vUV);
 
 
-        if (baseColor.g < threshold) {
-            gl_FragColor = baseColor;
-        } else {
-            gl_FragColor = vec4(0);
-        }
-    }
-    `;
+    //     if (baseColor.g < threshold) {
+    //         gl_FragColor = baseColor;
+    //     } else {
+    //         gl_FragColor = vec4(0);
+    //     }
+    // }
+    // `;
 
-    var postProcess = new BABYLON.PostProcess("My custom post process", "custom", ["screenSize", "threshold"], null, 0.25, camera2);
-    postProcess.onApply = function (effect) {
-        effect.setFloat2("screenSize", postProcess.width, postProcess.height);
-        effect.setFloat("threshold", 1.0);
-    };
+    // var postProcess = new BABYLON.PostProcess("My custom post process", "custom", ["screenSize", "threshold"], null, 0.25, camera2);
+    // postProcess.onApply = function (effect) {
+    //     effect.setFloat2("screenSize", postProcess.width, postProcess.height);
+    //     effect.setFloat("threshold", 1.0);
+    // };
     //camera2.layerMask = 0;
 
     //--------------------LIGHTS-----------------------------
@@ -75,6 +80,7 @@ const createScene =  () => {
     var light2 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -0.8, 0.4), scene);
     light2.position = new BABYLON.Vector3(0,20,10);
     light2.intensity = 2.4;
+    scene.createDefaultEnvironment({ createSkybox: false, createGround: false });
     //var light2 = new BABYLON.SpotLight("spotLight", new BABYLON.Vector3(3, 2.5, 8), new BABYLON.Vector3(0, 0, -1), Math.PI / 3, 2, scene);
 
     //------------------SHADOWS----------------------------------------
@@ -84,8 +90,10 @@ const createScene =  () => {
 
     //-----------------GROUND----------------------------
     const ground = BABYLON.MeshBuilder.CreateGround("ground", {width:100, height:100});
-    const groundMat = new BABYLON.StandardMaterial("groundMat");
-    groundMat.diffuseColor = new BABYLON.Color3(119/255, 110/255, 34/255);
+    const groundMat = new BABYLON.PBRMaterial("groundMat");
+    groundMat.albedoColor = new BABYLON.Color3(150/255, 110/255, 34/255);
+    groundMat.metallic = 0.4;
+    groundMat.roughness = 1;
     //groundMat.diffuseTexture = new BABYLON.Texture("assets/stone_ground.jpg");
     ground.material = groundMat; //Place the material property of the ground
     ground.checkCollisions= true;
@@ -141,10 +149,7 @@ const createScene =  () => {
         autoplay: true,
         volume: 0.1
       });
-    var intro1 = new BABYLON.Sound("intro1", "assets/sounds/Introduction1.ogg", scene,function() {
-        // Sound has been downloaded & decoded
-        intro1.play();
-      });
+
     
     var intro2 = new BABYLON.Sound("intro2", "assets/sounds/Introduction2.ogg", scene);
     var intro3 = new BABYLON.Sound("intro3", "assets/sounds/Introduction3.ogg", scene);
@@ -171,37 +176,37 @@ const createScene =  () => {
 
 
     //--------------------MAP----------------------------------
-    var rt2 = new BABYLON.RenderTargetTexture("depth", 1024, scene, true, true);
-    scene.customRenderTargets.push(rt2);
-	rt2.activeCamera = camera2;
-    rt2.renderList = scene.meshes;
+    // var rt2 = new BABYLON.RenderTargetTexture("depth", 1024, scene, true, true);
+    // scene.customRenderTargets.push(rt2);
+	// rt2.activeCamera = camera2;
+    // rt2.renderList = scene.meshes;
 
     
-    var mon2 = BABYLON.Mesh.CreatePlane("plane", 6, scene);
-    // mon2.position = new BABYLON.Vector3(canvas.width/640, canvas.height/480, 20)
-    mon2.position = new BABYLON.Vector3(0, 0, 10)
-    var mon2mat = new BABYLON.StandardMaterial("texturePlane", scene);
-    mon2mat.diffuseColor = new BABYLON.Color3(0,1,1);
-    mon2mat.diffuseTexture = rt2;
-    mon2mat.specularColor = BABYLON.Color3.Black();
-    mon2mat.ambientColor = new BABYLON.Color3(0.5,1,0);
+    // var mon2 = BABYLON.Mesh.CreatePlane("plane", 6, scene);
+    // // mon2.position = new BABYLON.Vector3(canvas.width/640, canvas.height/480, 20)
+    // mon2.position = new BABYLON.Vector3(0, 0, 10)
+    // var mon2mat = new BABYLON.StandardMaterial("texturePlane", scene);
+    // mon2mat.diffuseColor = new BABYLON.Color3(0,1,1);
+    // mon2mat.diffuseTexture = rt2;
+    // mon2mat.specularColor = BABYLON.Color3.Black();
+    // mon2mat.ambientColor = new BABYLON.Color3(0.5,1,0);
 
-     mon2mat.diffuseTexture.uScale = 1/aspectRatio; // zoom
-     //mon2mat.diffuseTexture.vScale = 1;
-    mon2mat.diffuseTexture.uOffset = 1.215;
-     mon2mat.diffuseTexture.level = 1.2; // intensity
+    //  mon2mat.diffuseTexture.uScale = 1/aspectRatio; // zoom
+    //  //mon2mat.diffuseTexture.vScale = 1;
+    // mon2mat.diffuseTexture.uOffset = 1.215;
+    //  mon2mat.diffuseTexture.level = 1.2; // intensity
 
-    mon2mat.emissiveColor = new BABYLON.Color3(1,1,1); // backlight
-	mon2.material = mon2mat;
-	mon2.parent = camera;
-	mon2.parent = camera;
-    mon2.renderingGroupId = 1;
-	//mon2.layerMask = 1;
+    // mon2mat.emissiveColor = new BABYLON.Color3(1,1,1); // backlight
+	// mon2.material = mon2mat;
+	// mon2.parent = camera;
+	// mon2.parent = camera;
+    // mon2.renderingGroupId = 1;
+	// //mon2.layerMask = 1;
 
-	// mon2.enableEdgesRendering(epsilon);	 
-	mon2.edgesWidth = 5.0;
-	mon2.edgesColor = new BABYLON.Color4(1, 1, 1, 1);
-    mon2.isVisible = false;
+	// // mon2.enableEdgesRendering(epsilon);	 
+	// mon2.edgesWidth = 5.0;
+	// mon2.edgesColor = new BABYLON.Color4(1, 1, 1, 1);
+    // mon2.isVisible = false;
 
     //------------------UI-------------------------------------
 
@@ -316,7 +321,6 @@ const createScene =  () => {
         switch(dialogueCounter){
 
                     case 1: 
-                    intro1.stop();
                     dispBut.textBlock.text = "Welcome to the Ashara Desert. We are here to find fossils.";
                     intro2.play();
                     dialogueCounter++;
@@ -364,6 +368,7 @@ const createScene =  () => {
                     dialogueCounter++;
                     advancedTexture.removeControl(button4);
                     advancedTexture.removeControl(dispBut);
+                    document.getElementById('canvas_div_no_cursor').style.cursor = "none";
                     break;
 
         }
@@ -520,22 +525,24 @@ const createScene =  () => {
       }
     }*/
 
-    //------------MOUSE AND KEYBOARD---------------------------
-	var isLocked = false;
+    //------------MESH PICKING--------------------------
     
     var pickedUp = false;
-    //TODO: MAKE OTHER MESHES UNPICKABLE; HIGHLIGHT PICKED MESH
-	scene.onPointerDown = function (evt) {
+
+	function manipMesh() {
         console.log(pickedUp);
+
+        //If already picked up, wake the physics imposter so that it falls to the ground, remove it from the highlight layer
 		if(pickedUp){
             currMesh.physicsImpostor.wakeUp();
             hl.removeMesh(currMesh);
             currMesh = null;
             console.log(currMesh);
-            pickedUp = false;
-            
+            pickedUp = false;   
         }
         else{
+
+        //Raycast towards the front of the camera, if it hits a particular set of meshes, pick them up
             var pos = {x:camera.position.x + 1.1, y:camera.position.y, z:camera.position.z};
             var forward = camera.getTarget().subtract(camera.position).normalize();
             var ray = new BABYLON.Ray(camera.position,forward,5);	
@@ -543,62 +550,54 @@ const createScene =  () => {
              if(mesh == pickUpR1 || mesh== pickUpR2 || mesh==pickUpR3 || mesh==pickUpR4 || mesh==pickUpR5 || mesh ==pickUpR6 || mesh==pickUpSkull) return true;
              return false;
          });
+         //
             if(hit.pickedMesh){
                 hit.pickedMesh.physicsImpostor.sleep();
                 currMesh = hit.pickedMesh;
                 startingPoint = currMesh.position;
-                //currMesh.makeGeometryUnique();
                 pickedUp = true;
 
-                hl.addMesh(currMesh.subMeshes[0].getRenderingMesh(), BABYLON.Color3.Green());
-               
+                hl.addMesh(currMesh.subMeshes[0].getRenderingMesh(), BABYLON.Color3.Green());       
             }
         }
-
-		// if (!isLocked) {
-		// 	canvas.requestPointerLock = canvas.requestPointerLock || canvas.msRequestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
-		// 	if (canvas.requestPointerLock) {
-		// 		canvas.requestPointerLock();
-		// 	}
-		// }
-        
-        
-        
+ 
 	};
 
-    //Why isnt this working?
-    var debugShow = false;
-    scene.onKeyboardObservable.add((kbInfo) => {
-		switch (kbInfo.type) {
-			case BABYLON.KeyboardEventTypes.KEYDOWN:
-				switch (kbInfo.event.key) {
-                    case "m":
-                    case "M":
-                        if(debugShow==false)
-                        scene.debugLayer.show();
-                        else
-                        scene.debugLayer.hide();
-                    break;
-                    case "n":
-                    case "N":
-                        scene.debugLayer.hide();
-                    break;
-                }
-			break;
-		}
-	});
+
       
     scene.onPointerMove = function(evt){
-        //var forward = camera.getTarget().subtract(camera.position).normalize();
         if(currMesh){
-        //currMesh.position = camera.position + camera.cameraDirection *1.5;
-        const cameraForwardRay = camera.getForwardRay();
-        
-        currMesh.position = camera.position.add(cameraForwardRay.direction.normalize());
-        //currMesh.position = camera.position.subtract(startingPoint);
+        const cameraForwardRay = camera.getForwardRay();       
+        var forward = cameraForwardRay.direction.normalize();
+        forward = forward.scale(2.5);
+        currMesh.position = camera.position.add(forward);
         startingPoint = currMesh.position;
         }
     };
+
+    //Why isnt this working?
+    // var debugShow = false;
+    // scene.onKeyboardObservable.add((kbInfo) => {
+	// 	switch (kbInfo.type) {
+	// 		case BABYLON.KeyboardEventTypes.KEYDOWN:
+	// 			switch (kbInfo.event.key) {
+    //                 case "m":
+    //                 case "M":
+    //                     if(debugShow==false)
+    //                     scene.debugLayer.show();
+    //                     else
+    //                     scene.debugLayer.hide();
+    //                 break;
+    //                 case "n":
+    //                 case "N":
+    //                     scene.debugLayer.hide();
+    //                 break;
+    //             }
+	// 		break;
+	// 	}
+	// });
+      
+
 	
 	// var pointerlockchange = function () {
 	// 	var controlEnabled = document.mozPointerLockElement || document.webkitPointerLockElement || document.msPointerLockElement || document.pointerLockElement || null;
@@ -670,18 +669,18 @@ const createScene =  () => {
 
 
     //----------------------------MAMMOTH-----------------------------------
-    BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/11_mammoth.glb").then((result) => {
-        result.meshes[0].position.z = 6;
-        result.meshes[0].position.x = -14;
-        result.meshes[0].scaling = new BABYLON.Vector3(0.075, 0.075, 0.075);
-        result.meshes[0].isPickable = false;
-            result.meshes[0].rotationQuaternion = null;
-            result.meshes[0].rotate.y =-Math.PI/2;
-            result.meshes[0].getChildMeshes().forEach((m)=>{
-                m.isPickable = false;
-                shadowGenerator.getShadowMap().renderList.push(m);
-            });     
-    });
+    // BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/11_mammoth.glb").then((result) => {
+    //     result.meshes[0].position.z = 6;
+    //     result.meshes[0].position.x = -14;
+    //     result.meshes[0].scaling = new BABYLON.Vector3(0.075, 0.075, 0.075);
+    //     result.meshes[0].isPickable = false;
+    //         result.meshes[0].rotationQuaternion = null;
+    //         result.meshes[0].rotate.y =-Math.PI/2;
+    //         result.meshes[0].getChildMeshes().forEach((m)=>{
+    //             m.isPickable = false;
+    //             shadowGenerator.getShadowMap().renderList.push(m);
+    //         });     
+    // });
 
      //----------------------------DESERT PLANTS-----------------------------------
      BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/6_desertplants.glb").then((result) => {
@@ -878,18 +877,7 @@ const createScene =  () => {
         pickUpR1.addBehavior(sixDofDragBehavior)
         var multiPointerScaleBehavior = new BABYLON.MultiPointerScaleBehavior()
         pickUpR1.addBehavior(multiPointerScaleBehavior)
-        //USE THIS TO ITERATIVELY PLACE ROCKS WHEN YOU FIGURE OUT THE COORDINATES
-        //const rocks =[];E
-            // const x1 = -40;
-        // for(let i =0;i<8;i+=4){
-        //     rocks[i] = rock01.createInstance("rock01" + i);
-        //     rocks[i+1] = rock02.createInstance("rock02" + i);
-        //     rocks[i+2] = rock03.createInstance("rock03" + i);
-        //     rocks[i+3] = rock07.createInstance("rock07" + i);
 
-        //     rocks[i].position = new BABYLON.Vector3(x1 + i* 20,0,-40.0);
-        //     rocks[i+1].position = new BABYLON.Vector3();
-        // }
     });
 
      //-----HANNAH----
@@ -900,7 +888,7 @@ const createScene =  () => {
 
             result.meshes[0].rotationQuaternion = null;
             result.meshes[0].rotate.y =Math.PI/2;   
-        hannah = result.meshes[0];  
+        hannah = result.meshes[0].position; 
     });
     // ------ DESERT PLANTS --------
     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/pal.glb").then((result) => {
@@ -937,43 +925,12 @@ const createScene =  () => {
         let ctx = texture.getContext()
         let reticule
 
-        const createOutline = () => {
-        let c = 2
-
-        ctx.moveTo(c, w * 0.25)
-        ctx.lineTo(c, c)
-        ctx.lineTo(w * 0.25, c)
-
-        ctx.moveTo(w * 0.75, c)
-        ctx.lineTo(w - c, c)
-        ctx.lineTo(w - c, w * 0.25)
-
-        ctx.moveTo(w - c, w * 0.75)
-        ctx.lineTo(w - c, w - c)
-        ctx.lineTo(w * 0.75, w - c)
-
-        ctx.moveTo(w * 0.25, w - c)
-        ctx.lineTo(c, w - c)
-        ctx.lineTo(c, w * 0.75)
-
-        ctx.lineWidth = 1.5
-        ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'
-        ctx.stroke()
-        }
-
         const createNavigate = () => {
         ctx.fillStyle = 'transparent'
         ctx.clearRect(0, 0, w, w)
-        createOutline()
 
         ctx.strokeStyle = 'rgba(170, 255, 0, 0.9)'
         ctx.lineWidth = 3.5
-        // ctx.moveTo(0,0)
-        // ctx.lineTo(w, w)
-
-        // ctx.moveTo(w*0.5, w)
-        // ctx.lineTo(w*0.5, w*0.25)
-        // ctx.stroke()
         ctx.beginPath()
         ctx.arc(w*0.5, w*0.5, 20, 0, 2 * Math.PI);
         ctx.fillStyle = "rgba(0, 255, 0, 0.4)";
@@ -1003,14 +960,111 @@ const createScene =  () => {
         return reticule;
     }
 
-    let reticule = addCrosshair(scene);
-    console.log(BABYLON.Vector3.Distance(camera.position, originalPlace));
-    console.log(camera.position);
-    //if(BABYLON.Vector3.Distance(hero.position, originalPlace)< 20){
-        advancedTexture.addControl(button4);
-        advancedTexture.addControl(dispBut);
+    let crosshair = addCrosshair(scene);
 
-     //   }
+    // console.log(BABYLON.Vector3.Distance(camera.position, originalPlace));
+    // console.log(camera.position);
+    
+    console.log(camera.position);
+    //console.log(hero.getAbsolutePosition())
+    scene.onBeforeRenderObservable.add(function () {
+		if(hannah && BABYLON.Vector3.Distance(new BABYLON.Vector3(7,0,4),camera.position)<10){
+            
+            advancedTexture.addControl(button4);
+            advancedTexture.addControl(dispBut);
+            if(!playedIntro){
+                document.getElementById('canvas_div_no_cursor').style.cursor = "auto";
+                playedIntro = true;
+                var intro1 = new BABYLON.Sound("intro1", "assets/sounds/Introduction1.ogg", scene,function() {
+                    // Sound has been downloaded & decoded
+                    intro1.play();
+                    dialogueCounter++;
+                  });
+                }
+        }
+        
+        if(dialogueCounter>8){
+            advancedTexture.removeControl(button4);
+            advancedTexture.removeControl(dispBut);
+        }
+
+        if (xPressed) {
+            if(currMesh){
+                currMesh.rotate(BABYLON.Axis.X, 0.1);
+                console.log(currMesh.rotation.z);
+            }                
+        } 
+        if (yPressed) {
+            if(currMesh){
+                currMesh.rotate(BABYLON.Axis.Z, 0.1);
+                console.log(currMesh.rotation.z);
+            }                
+        }
+        if (zPressed) {
+            if(currMesh){
+                currMesh.rotate(BABYLON.Axis.Y, 0.1);
+                console.log(currMesh.rotation.z);
+            }                
+        }
+	});
+    
+//----------DEBUGGER-------------------
+var debugShow = false;
+scene.onKeyboardObservable.add((kbInfo) => {
+    switch (kbInfo.type) {
+        case BABYLON.KeyboardEventTypes.KEYDOWN:
+            switch (kbInfo.event.key) {
+                case "e":
+                case "E":
+                manipMesh();
+                    keyPressedE = true;
+                    break;
+                case "m":
+                case "M":
+                    if(debugShow==false)
+                    scene.debugLayer.show();
+                    else
+                    scene.debugLayer.hide();
+                break;
+                case "n":
+                case "N":
+                    scene.debugLayer.hide();
+                break;
+                case "x":
+                case "X":
+                    xPressed = true;
+                break;
+                case "y":
+                case "Y":
+                    yPressed = true;
+                break;
+                case "z":
+                case "Z":
+                    zPressed = true;
+                break;
+            }
+        break;
+        case BABYLON.KeyboardEventTypes.KEYUP:
+            switch (kbInfo.event.key) {   
+            case "e":
+            case "E":
+                keyPressedE = false;
+                break;
+                case "x":
+                case "X":
+                     xPressed = false;
+                break;
+                case "y":
+                case "Y":
+                     yPressed = false;
+                break;
+                case "z":
+                case "Z":
+                     zPressed = false;
+                break;
+            }                
+        }
+    });
 
     return scene;
 }

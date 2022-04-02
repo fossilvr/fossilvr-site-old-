@@ -32,8 +32,15 @@
     </head>
 
    <body>
-
-    <canvas id="renderCanvas" touch-action="none"></canvas> <!-- touch-action="none" for best results from PEP -->
+    <div id="canvas_div_no_cursor">
+        <!-- canvas here -->
+        <canvas id="renderCanvas" touch-action="none"></canvas> <!-- touch-action="none" for best results from PEP -->
+     </div>
+     <script type="text/javascript">
+       document.getElementById('canvas_div_no_cursor').style.cursor = "none";
+     </script>
+     
+    
     <script src="js/render.js"></script>
 
    </body>
