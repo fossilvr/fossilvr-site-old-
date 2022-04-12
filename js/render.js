@@ -2,6 +2,7 @@
 const canvas = document.getElementById("renderCanvas"); // Get the canvas element
 const engine = new BABYLON.Engine(canvas, true,{ stencil: true }); // Generate the BABYLON 3D engine
 var hannah;
+var playGame = false;
 const createScene =  () => {
     //-------VARIABLES-------------------------------
     var picked = false;
@@ -15,6 +16,7 @@ const createScene =  () => {
     var xPressed = false;
     var yPressed = false;
     var zPressed = false;
+    var cancelled = false;
 
     //-----------SCENE INITIALIZATIONS------------------------
     const scene = new BABYLON.Scene(engine);
@@ -36,42 +38,42 @@ const createScene =  () => {
     // camera.layerMask = 1;
     camera.inertia = 0.5;
 
-    // var camera2 = new BABYLON.ArcRotateCamera("Camera2", -Math.PI/2, 0.5, 110, BABYLON.Vector3.Zero(), scene);
-    // scene.activeCameras = [];
-    // scene.activeCameras.push(camera);
-    // BABYLON.Effect.ShadersStore["customFragmentShader"] = `
-    // #ifdef GL_ES
-    //     precision highp float;
-    // #endif
+    var camera2 = new BABYLON.ArcRotateCamera("Camera2", -Math.PI/2, 0.5, 110, BABYLON.Vector3.Zero(), scene);
+    scene.activeCameras = [];
+    scene.activeCameras.push(camera);
+    BABYLON.Effect.ShadersStore["customFragmentShader"] = `
+    #ifdef GL_ES
+        precision highp float;
+    #endif
 
-    // // Samplers
-    // varying vec2 vUV;
-    // uniform sampler2D textureSampler;
+    // Samplers
+    varying vec2 vUV;
+    uniform sampler2D textureSampler;
 
-    // // Parameters
-    // uniform vec2 screenSize;
-    // uniform float threshold;
+    // Parameters
+    uniform vec2 screenSize;
+    uniform float threshold;
 
-    // void main(void) 
-    // {
-    //     vec2 texelSize = vec2(1.0 / screenSize.x, 1.0 / screenSize.y);
-    //     vec4 baseColor = texture2D(textureSampler, vUV);
+    void main(void) 
+    {
+        vec2 texelSize = vec2(1.0 / screenSize.x, 1.0 / screenSize.y);
+        vec4 baseColor = texture2D(textureSampler, vUV);
 
 
-    //     if (baseColor.g < threshold) {
-    //         gl_FragColor = baseColor;
-    //     } else {
-    //         gl_FragColor = vec4(0);
-    //     }
-    // }
-    // `;
+        if (baseColor.g < threshold) {
+            gl_FragColor = baseColor;
+        } else {
+            gl_FragColor = vec4(0);
+        }
+    }
+    `;
 
-    // var postProcess = new BABYLON.PostProcess("My custom post process", "custom", ["screenSize", "threshold"], null, 0.25, camera2);
-    // postProcess.onApply = function (effect) {
-    //     effect.setFloat2("screenSize", postProcess.width, postProcess.height);
-    //     effect.setFloat("threshold", 1.0);
-    // };
-    //camera2.layerMask = 0;
+    var postProcess = new BABYLON.PostProcess("My custom post process", "custom", ["screenSize", "threshold"], null, 0.25, camera2);
+    postProcess.onApply = function (effect) {
+        effect.setFloat2("screenSize", postProcess.width, postProcess.height);
+        effect.setFloat("threshold", 1.0);
+    };
+    camera2.layerMask = 0;
 
     //--------------------LIGHTS-----------------------------
     //Hemispherical light can't cast shadows
@@ -176,37 +178,37 @@ const createScene =  () => {
 
 
     //--------------------MAP----------------------------------
-    // var rt2 = new BABYLON.RenderTargetTexture("depth", 1024, scene, true, true);
-    // scene.customRenderTargets.push(rt2);
-	// rt2.activeCamera = camera2;
-    // rt2.renderList = scene.meshes;
+    var rt2 = new BABYLON.RenderTargetTexture("depth", 1024, scene, true, true);
+    scene.customRenderTargets.push(rt2);
+	rt2.activeCamera = camera2;
+    rt2.renderList = scene.meshes;
 
     
-    // var mon2 = BABYLON.Mesh.CreatePlane("plane", 6, scene);
-    // // mon2.position = new BABYLON.Vector3(canvas.width/640, canvas.height/480, 20)
-    // mon2.position = new BABYLON.Vector3(0, 0, 10)
-    // var mon2mat = new BABYLON.StandardMaterial("texturePlane", scene);
-    // mon2mat.diffuseColor = new BABYLON.Color3(0,1,1);
-    // mon2mat.diffuseTexture = rt2;
-    // mon2mat.specularColor = BABYLON.Color3.Black();
-    // mon2mat.ambientColor = new BABYLON.Color3(0.5,1,0);
+    var mon2 = BABYLON.Mesh.CreatePlane("plane", 6, scene);
+    // mon2.position = new BABYLON.Vector3(canvas.width/640, canvas.height/480, 20)
+    mon2.position = new BABYLON.Vector3(0, 0, 10)
+    var mon2mat = new BABYLON.StandardMaterial("texturePlane", scene);
+    mon2mat.diffuseColor = new BABYLON.Color3(0,1,1);
+    mon2mat.diffuseTexture = rt2;
+    mon2mat.specularColor = BABYLON.Color3.Black();
+    mon2mat.ambientColor = new BABYLON.Color3(0.5,1,0);
 
-    //  mon2mat.diffuseTexture.uScale = 1/aspectRatio; // zoom
-    //  //mon2mat.diffuseTexture.vScale = 1;
-    // mon2mat.diffuseTexture.uOffset = 1.215;
-    //  mon2mat.diffuseTexture.level = 1.2; // intensity
+     mon2mat.diffuseTexture.uScale = 1/aspectRatio; // zoom
+     //mon2mat.diffuseTexture.vScale = 1;
+    mon2mat.diffuseTexture.uOffset = 1.215;
+     mon2mat.diffuseTexture.level = 1.2; // intensity
 
-    // mon2mat.emissiveColor = new BABYLON.Color3(1,1,1); // backlight
-	// mon2.material = mon2mat;
-	// mon2.parent = camera;
-	// mon2.parent = camera;
-    // mon2.renderingGroupId = 1;
-	// //mon2.layerMask = 1;
+    mon2mat.emissiveColor = new BABYLON.Color3(1,1,1); // backlight
+	mon2.material = mon2mat;
+	mon2.parent = camera;
+	mon2.parent = camera;
+    mon2.renderingGroupId = 1;
+	//mon2.layerMask = 1;
 
-	// // mon2.enableEdgesRendering(epsilon);	 
-	// mon2.edgesWidth = 5.0;
-	// mon2.edgesColor = new BABYLON.Color4(1, 1, 1, 1);
-    // mon2.isVisible = false;
+	// mon2.enableEdgesRendering(epsilon);	 
+	mon2.edgesWidth = 5.0;
+	mon2.edgesColor = new BABYLON.Color4(1, 1, 1, 1);
+    mon2.isVisible = false;
 
     //------------------UI-------------------------------------
 
@@ -315,7 +317,17 @@ const createScene =  () => {
     dispBut.color = "#000000";
     dispBut.background = "#303236";
 
-    
+    var button5 = BABYLON.GUI.Button.CreateSimpleButton("button", "X");
+    button5.top = "20%";
+    button5.left = "30%";
+    button5.width = "50px";
+    button5.height = "50px";
+    button5.cornerRadius = 20;
+    button5.thickness = 4;
+    button5.children[0].color = "#DFF9FB";
+    button5.children[0].fontSize = 24;
+    button5.color = "#FF7979";
+    button5.background = "#EB4D4B";
 
     button4.onPointerUpObservable.add(function() {
         switch(dialogueCounter){
@@ -368,10 +380,19 @@ const createScene =  () => {
                     dialogueCounter++;
                     advancedTexture.removeControl(button4);
                     advancedTexture.removeControl(dispBut);
-                    document.getElementById('canvas_div_no_cursor').style.cursor = "none";
+                    //document.getElementById('canvas_div_no_cursor').style.cursor = "none";
                     break;
 
         }
+    });
+
+    button5.onPointerUpObservable.add(function(){
+        console.log("In");
+        dialogueCounter = 0;
+        advancedTexture.removeControl(button4);
+        advancedTexture.removeControl(dispBut);
+        advancedTexture.removeControl(button5);
+        cancelled = true;
     });
 
     
@@ -968,12 +989,13 @@ const createScene =  () => {
     console.log(camera.position);
     //console.log(hero.getAbsolutePosition())
     scene.onBeforeRenderObservable.add(function () {
-		if(hannah && BABYLON.Vector3.Distance(new BABYLON.Vector3(7,0,4),camera.position)<10){
+		if(!cancelled && hannah && BABYLON.Vector3.Distance(new BABYLON.Vector3(7,0,4),camera.position)<10){
             
             advancedTexture.addControl(button4);
+            advancedTexture.addControl(button5);
             advancedTexture.addControl(dispBut);
             if(!playedIntro){
-                document.getElementById('canvas_div_no_cursor').style.cursor = "auto";
+                document.getElementById('canvas_div_no_cursor').style.cursor = "url(\"assets/cc.svg\"), auto;";
                 playedIntro = true;
                 var intro1 = new BABYLON.Sound("intro1", "assets/sounds/Introduction1.ogg", scene,function() {
                     // Sound has been downloaded & decoded
@@ -1069,13 +1091,68 @@ scene.onKeyboardObservable.add((kbInfo) => {
     return scene;
 }
 
+const createScene1 = () => {
+    const scene1 = new BABYLON.Scene(engine);
+    var camera = new BABYLON.UniversalCamera("UniversalCamera", new BABYLON.Vector3(0, 0, -10), scene1);
+    camera.setTarget(BABYLON.Vector3.Zero());
+    
+    // camera.ellipsoid = new BABYLON.Vector3(.4, .8, .4);
+    // camera.checkCollisions = true;
+    // camera.speed = 5;
+    // camera.layerMask = 1;
+    camera.inertia = 0.5;
+    var aspectRatio = screen.width/screen.height;
+
+    const plane = BABYLON.MeshBuilder.CreatePlane("plane", {height:10, width: 20},scene1);
+    var material = new BABYLON.StandardMaterial("texture1", scene1);
+    material.diffuseTexture = new BABYLON.Texture("assets/asd.png ", scene1);
+    material.diffuseTexture.uScale = 1.0;
+    material.diffuseTexture.vScale = 1.0;
+    plane.material = material;
+    var light = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene1);
+    light.intensity = 2.4;
+    document.getElementById('canvas_div_no_cursor').style.cursor = "url(\"assets/cc.svg\"), auto";
+
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI1");
+    var button1 = BABYLON.GUI.Button.CreateSimpleButton("but1", "Play!");
+    button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+    button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    button1.width = 0.15;
+    button1.height = 0.1;
+    //button1.left = -canvas.width+canvas.width/1.05;
+    button1.top = canvas.height - canvas.height/1.2;
+    button1.thickness = 1; 
+    button1.color = "white";
+    button1.cornerRadius = 5;
+    button1.background = "orange";
+
+
+    var button2 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/Button1.png");
+    button2.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    button2.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    button2.width = 0.06;
+    button2.height = 0.06*aspectRatio;
+    button2.left = -canvas.width+canvas.width/1.05;
+    button2.top = canvas.height - canvas.height/1.1;
+    button2.thickness = 0; 
+    advancedTexture.addControl(button1); 
+    advancedTexture.addControl(button2); 
+
+    button1.onPointerUpObservable.add(function() {
+        playGame = true;
+    });
+    return scene1;
+}
 
 
 const scene = createScene(); 
-
+const scene1 = createScene1();
     
         engine.runRenderLoop(function () {
+            if(playGame)
                 scene.render();
+            else
+                scene1.render();
         });
 
     
