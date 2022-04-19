@@ -404,7 +404,7 @@ const createScene =  () => {
     advancedTexture.addControl(input2);
 
     
-
+    
 
     //---------------PLAYER----------------------------------
     const hero = BABYLON.Mesh.CreateBox('hero', 1.0, scene, false, BABYLON.Mesh.FRONTSIDE);
@@ -556,7 +556,7 @@ const createScene =  () => {
         //If already picked up, wake the physics imposter so that it falls to the ground, remove it from the highlight layer
 		if(pickedUp){
             currMesh.physicsImpostor.wakeUp();
-            hl.removeMesh(currMesh);
+            //hl.removeMesh(currMesh);
             currMesh = null;
             console.log(currMesh);
             pickedUp = false;   
@@ -568,7 +568,11 @@ const createScene =  () => {
             var forward = camera.getTarget().subtract(camera.position).normalize();
             var ray = new BABYLON.Ray(camera.position,forward,5);	
             var hit = scene.pickWithRay(ray, function(mesh){
-             if(mesh == pickUpR1 || mesh== pickUpR2 || mesh==pickUpR3 || mesh==pickUpR4 || mesh==pickUpR5 || mesh ==pickUpR6 || mesh==pickUpSkull) return true;
+             if(mesh == pickUpR1 || mesh== pickUpR2 || mesh==pickUpR3 || mesh==pickUpR4 || mesh==pickUpR5 || mesh ==pickUpR6 || mesh==pickUpSkull) { 
+                if(mesh==pickUpSkull) 
+                showInfoPanel() ; 
+                 return true;
+             }
              return false;
          });
          //
@@ -578,13 +582,74 @@ const createScene =  () => {
                 startingPoint = currMesh.position;
                 pickedUp = true;
 
-                hl.addMesh(currMesh.subMeshes[0].getRenderingMesh(), BABYLON.Color3.Green());       
+                //hl.addMesh(currMesh.subMeshes[0].getRenderingMesh(), BABYLON.Color3.Green());       
             }
         }
- 
+
 	};
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI2");
+
+    
+    function showInfoPanel(){
+    //camera.detachControl();
+    var mon3 = BABYLON.MeshBuilder.CreatePlane("plane1", {width:9,height:5},scene);
+    mon3.isPickable = false;
+    mon3.position = new BABYLON.Vector3(0, 0, 7)
+    var mon3mat = new BABYLON.StandardMaterial("texturePlane1", scene);
+    mon3mat.alpha = 1;
+    var t = new BABYLON.Texture("assets/ui/Group68.png ", scene);
+    t.hasAlpha = true;
+   
+    mon3mat.diffuseTexture = t;
+    //mon3mat.ambientTexture = groundTexture;
+    mon3mat.useAlphaFromDiffuseTexture = true; 
+	mon3.material = mon3mat;
+	mon3.parent = camera;
+    mon3.renderingGroupId = 1;
+    mon3.isVisible = true;
 
 
+    var text1 = new BABYLON.GUI.TextBlock();
+    text1.text = "Fossil ID:\tFossil #3\n\nLocation: \tAshara Desert, Mountain #3\n\nFound by: \t Timothee Smith";
+    text1.color = "black";
+    text1.fontSize = 20;
+    text1.top = "8%";
+    text1.left = "19%";
+    advancedTexture.addControl(text1);
+    advancedTexture.renderingGroupId = 1;
+
+    var buttonSend = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/Group13.png");
+    buttonSend.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+    buttonSend.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    buttonSend.width = 0.23;
+    buttonSend.height = 0.08;
+    //button1.left = -canvas.width+canvas.width/1.05;
+    buttonSend.top = "28%";
+    buttonSend.left="20%";
+    buttonSend.thickness = 0;
+    buttonSend.cornerRadius = 5;
+
+    buttonSend.onPointerUpObservable.add(function() {
+        camera.attachControl(canvas,true);
+        text1.isVisible = false;
+        buttonSend.isVisible = false;
+        pickUpSkull.position = new BABYLON.Vector3(-23,1,7);
+        mon3.isVisible = false;
+        currMesh = null;
+    });
+    advancedTexture.addControl(buttonSend);
+    // var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI1");
+    // var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/StartButton.png");
+    // button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+    // button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    // button1.width = 0.15;
+    // button1.height = 0.1;
+    // //button1.left = -canvas.width+canvas.width/1.05;
+    // button1.top = canvas.height - canvas.height/1.2;
+    // button1.thickness = 0;
+    // button1.cornerRadius = 5;
+    
+    }
       
     scene.onPointerMove = function(evt){
         if(currMesh){
@@ -1105,7 +1170,7 @@ const createScene1 = () => {
 
     const plane = BABYLON.MeshBuilder.CreatePlane("plane", {height:10, width: 20},scene1);
     var material = new BABYLON.StandardMaterial("texture1", scene1);
-    material.diffuseTexture = new BABYLON.Texture("assets/asd.png ", scene1);
+    material.diffuseTexture = new BABYLON.Texture("assets/BackgroundStart.png ", scene1);
     material.diffuseTexture.uScale = 1.0;
     material.diffuseTexture.vScale = 1.0;
     plane.material = material;
@@ -1114,17 +1179,15 @@ const createScene1 = () => {
     document.getElementById('canvas_div_no_cursor').style.cursor = "url(\"assets/cc.svg\"), auto";
 
     var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI1");
-    var button1 = BABYLON.GUI.Button.CreateSimpleButton("but1", "Play!");
+    var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/StartButton.png");
     button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
     button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
     button1.width = 0.15;
     button1.height = 0.1;
     //button1.left = -canvas.width+canvas.width/1.05;
     button1.top = canvas.height - canvas.height/1.2;
-    button1.thickness = 1; 
-    button1.color = "white";
+    button1.thickness = 0;
     button1.cornerRadius = 5;
-    button1.background = "orange";
 
 
     var button2 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/Button1.png");
