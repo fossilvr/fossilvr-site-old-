@@ -577,9 +577,11 @@ const createScene =  () => {
             var ray = new BABYLON.Ray(camera.position,forward,5);	
             var hit = scene.pickWithRay(ray, function(mesh){
              if(mesh == pickUpR1 || mesh== pickUpR2 || mesh==pickUpR3 || mesh==pickUpR4 || mesh==pickUpR5 || mesh ==pickUpR6 || mesh==pickUpSkull) { 
-                if(mesh==pickUpSkull) 
-                showInfoPanel() ; 
+                if(mesh==pickUpSkull){ 
+                showInfoPanel();
+                } 
                  return true;
+                
              }
              return false;
          });
@@ -662,6 +664,7 @@ const createScene =  () => {
     
     
     function showJournal(){
+        camera.detachControl();
     var mon4 = BABYLON.MeshBuilder.CreatePlane("plane4", {width:9,height:5},scene);
     mon4.isPickable = false;
     mon4.position = new BABYLON.Vector3(0, 0, 7)
@@ -669,7 +672,7 @@ const createScene =  () => {
     mon4mat.alpha = 1;
     var t = new BABYLON.Texture("assets/ui/Group137.png ", scene);
     t.hasAlpha = true;
-    
+    fossilJournal = pickUpSkull.createInstance("ASDASD");
     mon4mat.diffuseTexture = t;
     //mon3mat.ambientTexture = groundTexture;
     mon4mat.useAlphaFromDiffuseTexture = true; 
@@ -677,10 +680,10 @@ const createScene =  () => {
 	mon4.parent = camera;
     mon4.renderingGroupId = 1;
     mon4.isVisible = false;
-    fossilJournal.forEach((m) => m.renderingGroupId = 1);
+    //fossilJournal.forEach((m) => m.renderingGroupId = 1);
     fossilJournal.position = new BABYLON.Vector3(0,0,2);
     fossilJournal.parent = camera;
-    //fossilJournal.renderingGroupId = 1;
+    fossilJournal.renderingGroupId =2;
     }
       
     scene.onPointerMove = function(evt){
@@ -692,6 +695,64 @@ const createScene =  () => {
         startingPoint = currMesh.position;
         }
     };
+
+     var currentPosition = { x: 0, y: 0 };
+     var clicked = false;
+    canvas.addEventListener("pointerdown", function (evt) {
+        currentPosition.x = evt.clientX;
+        currentPosition.y = evt.clientY;
+        clicked = true;
+    });
+    
+    canvas.addEventListener("pointermove", function (evt) {
+        if (!clicked) {
+            return;
+        }
+
+        var dx = evt.clientX - currentPosition.x;
+        var dy = evt.clientY - currentPosition.y;
+
+        var angleX = dy * 0.01;
+        var angleY = -dx * 0.01;
+
+        var worldMat = fossilJournal.getWorldMatrix();
+
+
+
+
+        var rotXMat = BABYLON.Matrix.RotationZ(angleX);
+        var rotYMat = BABYLON.Matrix.RotationY(angleY);
+
+        // worldMat.multiply(rotXMat);
+        // worldMat.multiply(rotYMat);
+
+       worldMat = worldMat.invert()
+
+        var axis = new BABYLON.Vector3(worldMat.getRow(0).x, worldMat.getRow(1).x, worldMat.getRow(2).x);
+
+        console.log('axis1: ' + axis);
+
+        fossilJournal.rotate(axis, -angleX, BABYLON.Space.LOCAL);
+
+        var axis2 = new BABYLON.Vector3(worldMat.getRow(0).y, worldMat.getRow(1).y, worldMat.getRow(2).y);
+        fossilJournal.rotate(axis2, -angleY, BABYLON.Space.LOCAL);
+
+        console.log('axis2: ' + axis2);
+
+         //boxMesh.rotation.y -= angleY;
+        // boxMesh.rotation.x -= angleX;
+
+         // console.log(worldMat.toArray());
+
+        currentPosition.x = evt.clientX;
+        currentPosition.y = evt.clientY;
+    });
+    
+    canvas.addEventListener("pointerup", function (evt) {
+        clicked = false;
+    });
+
+
 
     //Why isnt this working?
     // var debugShow = false;
@@ -1017,7 +1078,7 @@ const createScene =  () => {
         result.meshes[0].isPickable = false;
         var fossil = scene.getMeshByName("13637_Triceratops_Skull_Fossil_v1_L2");
         fossil.checkCollisions = true;
-        fossilJournal = fossil.createInstance("ASDF");
+        
         //Under rock coordinates
         fossil.position.x = 27.8;
         fossil.position.y = -0.5;
