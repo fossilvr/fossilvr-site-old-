@@ -1,4 +1,10 @@
+/*TODO: 
+1. Selecting mesh for the second time, display journal.
+2. Journal renders the model.
+3. Pins can be picked.
 
+
+*/
 const canvas = document.getElementById("renderCanvas"); // Get the canvas element
 const engine = new BABYLON.Engine(canvas, true,{ stencil: true }); // Generate the BABYLON 3D engine
 var hannah;
@@ -81,7 +87,7 @@ const createScene =  () => {
     //light.intensity = 0.05;
     var light2 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -0.8, 0.4), scene);
     light2.position = new BABYLON.Vector3(0,20,10);
-    light2.intensity = 2.4;
+    light2.intensity = 3;
     scene.createDefaultEnvironment({ createSkybox: false, createGround: false });
     //var light2 = new BABYLON.SpotLight("spotLight", new BABYLON.Vector3(3, 2.5, 8), new BABYLON.Vector3(0, 0, -1), Math.PI / 3, 2, scene);
 
@@ -268,10 +274,11 @@ const createScene =  () => {
 
     button2.onPointerUpObservable.add(function() {
         if(!journalVisible){
-        journalPlane.isVisible = true;
-        input.isVisible = true;
-        input2.isVisible = true;
-        journalVisible = true;
+        // journalPlane.isVisible = true;
+        // input.isVisible = true;
+        // input2.isVisible = true;
+        journalVisible = !journalVisible;
+        showJournal();
         
     }
         else{
@@ -279,6 +286,7 @@ const createScene =  () => {
         journalPlane.isVisible = false;
         input2.isVisible = false;
         journalVisible = false;
+        journalVisible = !journalVisible;
     }
     });
 
@@ -610,7 +618,7 @@ const createScene =  () => {
 
 
     var text1 = new BABYLON.GUI.TextBlock();
-    text1.text = "Fossil ID:\tFossil #3\n\nLocation: \tAshara Desert, Mountain #3\n\nFound by: \t Timothee Smith";
+    text1.text = "Fossil ID:\tFossil #3\n\nLocation: \tAshara Desert, Mountain #3\n\nFound by: \t Jessica Roberts";
     text1.color = "black";
     text1.fontSize = 20;
     text1.top = "8%";
@@ -649,6 +657,30 @@ const createScene =  () => {
     // button1.thickness = 0;
     // button1.cornerRadius = 5;
     
+    }
+    var fossilJournal;
+    
+    
+    function showJournal(){
+    var mon4 = BABYLON.MeshBuilder.CreatePlane("plane4", {width:9,height:5},scene);
+    mon4.isPickable = false;
+    mon4.position = new BABYLON.Vector3(0, 0, 7)
+    var mon4mat = new BABYLON.StandardMaterial("texturePlane1", scene);
+    mon4mat.alpha = 1;
+    var t = new BABYLON.Texture("assets/ui/Group137.png ", scene);
+    t.hasAlpha = true;
+    
+    mon4mat.diffuseTexture = t;
+    //mon3mat.ambientTexture = groundTexture;
+    mon4mat.useAlphaFromDiffuseTexture = true; 
+	mon4.material = mon4mat;
+	mon4.parent = camera;
+    mon4.renderingGroupId = 1;
+    mon4.isVisible = false;
+    fossilJournal.forEach((m) => m.renderingGroupId = 1);
+    fossilJournal.position = new BABYLON.Vector3(0,0,2);
+    fossilJournal.parent = camera;
+    //fossilJournal.renderingGroupId = 1;
     }
       
     scene.onPointerMove = function(evt){
@@ -985,6 +1017,7 @@ const createScene =  () => {
         result.meshes[0].isPickable = false;
         var fossil = scene.getMeshByName("13637_Triceratops_Skull_Fossil_v1_L2");
         fossil.checkCollisions = true;
+        fossilJournal = fossil.createInstance("ASDF");
         //Under rock coordinates
         fossil.position.x = 27.8;
         fossil.position.y = -0.5;
