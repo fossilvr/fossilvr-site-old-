@@ -13,12 +13,13 @@ var muteScene0 = false;
 var muteScene1 = false;
 var globalVolumeScene0 = 0;
 var globalVolumeScene1 = 0;
+var journalVisible = false;
 const createScene =  () => {
     
     //-------VARIABLES-------------------------------
     var picked = false;
     var mapVisible = false;
-    var journalVisible = false;
+
     var pickUpR1, pickUpR2, pickUpR3, pickUpR4, pickUpR5, pickUpR6,pickUpSkull, pickUpSkull2, pickUpSkull3;
     var aspectRatio = screen.width/screen.height;
     var playedIntro = false;
@@ -278,22 +279,19 @@ const createScene =  () => {
     input2.background = "black";
     input2.isVisible = false;
     
-
+    var fossilJournal;
+    var newPin;
+    var mon4;
+    var mon4mat;
+    var t;
     button2.onPointerUpObservable.add(function() {
-        if(!journalVisible){
-        // journalPlane.isVisible = true;
-        // input.isVisible = true;
-        // input2.isVisible = true;
-        journalVisible = !journalVisible;
-        showJournal();
+        console.log(journalVisible);
+        if(journalVisible==false){
+        journalVisible = true;
         
     }
         else{
-        input.isVisible = false;
-        journalPlane.isVisible = false;
-        input2.isVisible = false;
         journalVisible = false;
-        journalVisible = !journalVisible;
     }
     });
     var advancedTextureHint = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("Hint");
@@ -650,55 +648,55 @@ const createScene =  () => {
             if(hit.pickedMesh){
                 if(hit.pickedMesh==pickUpSkull){ 
                     showInfoPanel("1","1");
+                    pickedUp = false;
                     } 
-                if(hit.pickedMesh==pickUpSkull2){ 
+                else if(hit.pickedMesh==pickUpSkull2){ 
                     showInfoPanel("2","2");
+                    pickedUp = false;
                     } 
-                if(hit.pickedMesh==pickUpSkull3){ 
+                else if(hit.pickedMesh==pickUpSkull3){ 
                     showInfoPanel("3","3");
+                    pickedUp = false;
                     } 
-                hit.pickedMesh.physicsImpostor.sleep();
-                currMesh = hit.pickedMesh;
-                startingPoint = currMesh.position;
-                pickedUp = true;
+                //hit.pickedMesh.physicsImpostor.sleep();
+                else {
+                    hit.pickedMesh.physicsImpostor.sleep();
+                    currMesh = hit.pickedMesh;
+                    startingPoint = currMesh.position;
+                    pickedUp = true;
+                }
 
                 //hl.addMesh(currMesh.subMeshes[0].getRenderingMesh(), BABYLON.Color3.Green());       
             }
         }
 
 	};
-    
 
+    scene.onPointerMove = function(evt){
+        if(currMesh){
+        const cameraForwardRay = camera.getForwardRay();       
+        var forward = cameraForwardRay.direction.normalize();
+        forward = forward.scale(2.5);
+        currMesh.position = camera.position.add(forward);
+        startingPoint = currMesh.position;
+        }
+    };
+    
+    var advancedTextureInfo = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI2");
+    var mon3 = new BABYLON.GUI.Image("but", "assets/ui/Group68.png");
+    mon3.width = "75%";
+    mon3.height = "75%";
     
     function showInfoPanel(fosNum, mountNum){
     camera.detachControl();
     advancedTexture.removeControl(button1);
     advancedTexture.removeControl(button2);
     advancedTexture.removeControl(button3);
-    var advancedTextureInfo = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI2");
-    var mon3 = new BABYLON.GUI.Image("but", "assets/ui/Group68.png");
-    mon3.width = "75%";
-    mon3.height = "75%";
-    // var light = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0, 0, 7), scene);
-    // light.parent = camera;
-    // light.renderingGroupId =1;
-    // mon3.isPickable = false;
-    // mon3.position = new BABYLON.Vector3(0, 0, 7)
-    // var mon3mat = new BABYLON.StandardMaterial("texturePlane1", scene);
-    // mon3mat.alpha = 1;
-    // var t = new BABYLON.Texture("assets/ui/Group68.png ", scene);
-    // t.hasAlpha = true;
-   
-    // mon3mat.diffuseTexture = t;
-    // //mon3mat.ambientTexture = groundTexture;
-    // mon3mat.useAlphaFromDiffuseTexture = true; 
-	// mon3.material = mon3mat;
-	// mon3.parent = camera;
-    // mon3.renderingGroupId = 1;
-    // mon3.isVisible = true;
-    advancedTextureInfo.parent = camera;
-    advancedTextureInfo.renderingGroupId = 1;
-    advancedTextureInfo.isVisible = true;
+    console.log("Inside Info Panel",fosNum);
+    mon3.isVisible = true;
+    //advancedTextureInfo.parent = camera;
+    //advancedTextureInfo.renderingGroupId = 1;
+    //advancedTextureInfo.isVisible = true;
 
 
     var text1 = new BABYLON.GUI.TextBlock();
@@ -709,7 +707,7 @@ const createScene =  () => {
     text1.left = "19%";
     advancedTextureInfo.addControl(mon3);
     advancedTextureInfo.addControl(text1);
-    advancedTextureInfo.renderingGroupId = 1;
+    //advancedTextureInfo.renderingGroupId = 1;
 
     var buttonSend = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/Group13.png");
     buttonSend.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -735,120 +733,25 @@ const createScene =  () => {
         pickUpSkull2.position = new BABYLON.Vector3(-19.7,1.25,7);
         if(fosNum=="3")
         pickUpSkull3.position = new BABYLON.Vector3(-23.5,0.95,5);
-        mon3.isVisible = false;
-        currMesh = null;
+        advancedTextureInfo.removeControl(mon3);
+        advancedTextureInfo.removeControl(text1);
+        advancedTextureInfo.removeControl(buttonSend);
     });
     advancedTextureInfo.addControl(buttonSend);
     
-    // var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI1");
-    // var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/StartButton.png");
-    // button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-    // button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-    // button1.width = 0.15;
-    // button1.height = 0.1;
-    // //button1.left = -canvas.width+canvas.width/1.05;
-    // button1.top = canvas.height - canvas.height/1.2;
-    // button1.thickness = 0;
-    // button1.cornerRadius = 5;
-    
     }
-    var fossilJournal;
-    var newPin;
-    
-    function showJournal(){
-    var mon4 = BABYLON.MeshBuilder.CreatePlane("plane4", {width:9,height:5},scene);
-    mon4.isPickable = false;
-    mon4.position = new BABYLON.Vector3(0, 0, 7)
-    var mon4mat = new BABYLON.StandardMaterial("texturePlane1", scene);
-    mon4mat.alpha = 1;
-    var t = new BABYLON.Texture("assets/ui/Group137.png ", scene);
-    t.hasAlpha = true;
-    fossilJournal = pickUpSkull.clone("ASDASD");
-    mon4mat.diffuseTexture = t;
-    //mon3mat.ambientTexture = groundTexture;
-    mon4mat.useAlphaFromDiffuseTexture = true; 
-	mon4.material = mon4mat;
-	mon4.parent = camera;
-    mon4.renderingGroupId = 1;
-    mon4.isVisible = true;
-    //fossilJournal.forEach((m) => m.renderingGroupId = 1);
-    fossilJournal.position = new BABYLON.Vector3(-0.5,0.3,4);
-    fossilJournal.parent = camera;
-    fossilJournal.renderingGroupId = 1;
-    newPin.isVisible = true;
-    newPin.position =  new BABYLON.Vector3(0.5,0.3,6);
-    newPin.parent = camera;
-    
-    newPin.renderingGroupId = 1;
-
-    }
-      
-    scene.onPointerMove = function(evt){
-        if(currMesh){
-        const cameraForwardRay = camera.getForwardRay();       
-        var forward = cameraForwardRay.direction.normalize();
-        forward = forward.scale(2.5);
-        currMesh.position = camera.position.add(forward);
-        startingPoint = currMesh.position;
-        }
-    };
-
-     var currentPosition = { x: 0, y: 0 };
-     var clicked = false;
-    canvas.addEventListener("pointerdown", function (evt) {
-        currentPosition.x = evt.clientX;
-        currentPosition.y = evt.clientY;
-        clicked = true;
-    });
-    
-    canvas.addEventListener("pointermove", function (evt) {
-        if (!clicked) {
-            return;
-        }
-
-        var dx = evt.clientX - currentPosition.x;
-        var dy = evt.clientY - currentPosition.y;
-
-        var angleX = dy * 0.01;
-        var angleY = -dx * 0.01;
-
-        var worldMat = fossilJournal.getWorldMatrix();
-
-
-
-
-        var rotXMat = BABYLON.Matrix.RotationZ(angleX);
-        var rotYMat = BABYLON.Matrix.RotationY(angleY);
-
-        // worldMat.multiply(rotXMat);
-        // worldMat.multiply(rotYMat);
-
-       worldMat = worldMat.invert()
-
-        var axis = new BABYLON.Vector3(worldMat.getRow(0).x, worldMat.getRow(1).x, worldMat.getRow(2).x);
-
-        //console.log('axis1: ' + axis);
-
-        fossilJournal.rotate(axis, -angleX, BABYLON.Space.LOCAL);
-
-        var axis2 = new BABYLON.Vector3(worldMat.getRow(0).y, worldMat.getRow(1).y, worldMat.getRow(2).y);
-        fossilJournal.rotate(axis2, -angleY, BABYLON.Space.LOCAL);
-
-        //console.log('axis2: ' + axis2);
-
-         //boxMesh.rotation.y -= angleY;
-        // boxMesh.rotation.x -= angleX;
-
-         // console.log(worldMat.toArray());
-
-        currentPosition.x = evt.clientX;
-        currentPosition.y = evt.clientY;
-    });
-    
-    canvas.addEventListener("pointerup", function (evt) {
-        clicked = false;
-    });
-
+    meshLen = 3;
+    var advancedTextureJournal = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("Journal UI");
+    var buttonSet = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/StartButton.png");
+    buttonSet.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+    buttonSet.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    buttonSet.width = 0.12;
+    buttonSet.height = 0.08;
+    //button1.left = -canvas.width+canvas.width/1.05;
+    buttonSet.top = "-9%";
+    buttonSet.left = "8%";
+    buttonSet.thickness = 0;
+    buttonSet.cornerRadius = 5;
 
 
     //Why isnt this working?
@@ -1283,7 +1186,7 @@ const createScene =  () => {
     });
 
      //-----HANNAH----
-     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/10_hannah_waving.glb").then((result) => {
+     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/ui/talking.glb").then((result) => {
         result.meshes[0].position.z = 4;
         result.meshes[0].position.x = 7;
         result.meshes[0].isPickable = false;
@@ -1332,8 +1235,10 @@ const createScene =  () => {
         result.meshes[0].rotationQuaternion = null;
         result.meshes[0].rotate(BABYLON.Vector3.Up(),Math.PI/2);    
     });
-
+    
+    journalInputs = [];
     scene.onBeforeRenderObservable.add(function () {
+        diff = 11.5;
 		if(!cancelled && hannah && BABYLON.Vector3.Distance(new BABYLON.Vector3(7,0,4),camera.position)<10){
             advancedTexture.removeControl(button1);
             advancedTexture.removeControl(button2);
@@ -1375,6 +1280,24 @@ const createScene =  () => {
                 currMesh.rotate(BABYLON.Axis.Y, 0.1);
                 console.log(currMesh.rotation.z);
             }                
+        }
+
+        while(meshLen>0){
+            var input3 = new BABYLON.GUI.InputText();
+            input3.width = 0.15;
+            input3.maxWidth = 0.15;
+            input3.height = "25px";
+            input3.top = ""+diff+ "%";
+            input3.left = "21%";
+            input3.text = "";
+            input3.color = "white";
+            input3.background = "white";
+            input3.thickness = 2;
+            input3.isVisible = true;
+            diff+=4;
+            //advancedTextureJournal.addControl(input3);
+            meshLen--;
+            journalInputs.push(input3);
         }
 	});
     
@@ -1437,21 +1360,6 @@ scene.onKeyboardObservable.add((kbInfo) => {
     });
 
     buttonMute.onPointerUpObservable.add(function(){
-        // if(!window.mute){
-        //     console.log(mute);
-        // globalVolume = BABYLON.Engine.audioEngine.getGlobalVolume(0);
-        // console.log(globalVolume);
-        // BABYLON.Engine.audioEngine.setGlobalVolume(0);
-        // buttonMute.children[0].source = "assets/ui/mute.png";
-        // window.mute = true;
-        // console.log(mute);
-        // }
-        // else{
-        //     console.log(mute);
-        //     BABYLON.Engine.audioEngine.setGlobalVolume(globalVolume);
-        //     buttonMute.children[0].source = "assets/ui/unmute.png";
-        //     window.mute = false;
-        // }
         if(!muteScene1){
         console.log("In");
         globalVolumeScene1 = BABYLON.Engine.audioEngine.getGlobalVolume();
@@ -1560,23 +1468,183 @@ const createScene1 = () => {
     return scene1;
 }
 
+const createSceneJournal = function() {
+    var diff = 13.3;
+	var scene = new BABYLON.Scene(engine);
+	var camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 3, new BABYLON.Vector3(0,-0.3,0), scene);
+	camera.attachControl(canvas, true);
+    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    camera.lowerRadiusLimit = 0.1;
+    camera.wheelPrecision = 15;
+    // Default intensity is 1. Let's dim the light a small amount
+    light.intensity = 0.7;
+
+    var pointsOfInterest = [];
+    var meshLen = 0;
+    var triceraSkull;
+    BABYLON.SceneLoader.ImportMesh("", "https://raw.githubusercontent.com/fossilvr/fossilvr.github.io/master/assets/", "pal.glb",scene, function(meshes){
+        meshes.forEach(function(mesh){
+            if(mesh.name != '13637_Triceratops_Skull_Fossil_v1_L2') mesh.isVisible = false;
+            else triceraSkull = mesh;
+        })
+
+        triceraSkull.position = new BABYLON.Vector3(0,0,0);
+        tricerSkull.scaling = new BABYLON.Vector3(50,50,50);
+        triceraSkull.position = new BABYLON.Vector3(0,1,0);
+    });
+    //scene.createDefaultCameraOrLight(true, true, true);
+
+    window.addEventListener('dblclick', function() {        
+        var pickResult = scene.pick(scene.pointerX, scene.pointerY);        
+
+        var mat = new BABYLON.StandardMaterial('mat1', this.scene);
+        mat.diffuseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
+
+        var sphere = BABYLON.MeshBuilder.CreateSphere(
+        'sphere1',
+        { diameter: 2, segments: 16 },
+        scene
+        );
+        sphere.material = mat;
+        sphere.position.y = 3;
+
+        var cube = BABYLON.MeshBuilder.CreateBox(
+        'cube',
+        { size: 0.5, height: 3 },
+        scene
+        );
+        cube.position = new BABYLON.Vector3(0, 1.5, 0);
+        cube.material = mat;
+
+        var mesh = BABYLON.Mesh.MergeMeshes([sphere, cube]);
+        mesh.scaling = new BABYLON.Vector3(0.05,0.05,0.05);       
+        pointsOfInterest.push(mat.diffuseColor);
+        mesh.position = pickResult.pickedPoint;
+			
+        // !!!!!!!!!!!!!!!!!!!!!
+        // ROTATION MUST BE HERE
+        // !!!!!!!!!!!!!!!!!!!!!
+                        
+        var axis1 = pickResult.getNormal();							        		
+        var axis2 = BABYLON.Vector3.Up();
+        var axis3 = BABYLON.Vector3.Up();
+        var start = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, 0);	//camera.position			
+
+        BABYLON.Vector3.CrossToRef(start, axis1, axis2);
+        BABYLON.Vector3.CrossToRef(axis2, axis1, axis3);
+        var tmpVec = BABYLON.Vector3.RotationFromAxis(axis3.negate(), axis1, axis2);
+        var quat = BABYLON.Quaternion.RotationYawPitchRoll(tmpVec.y, tmpVec.x, tmpVec.z);
+        mesh.rotationQuaternion = quat;
+
+        
+        meshLen++;
+
+            var checkbox = new BABYLON.GUI.Checkbox();
+            checkbox.top = ""+diff+ "%";
+            checkbox.left ="-9.5%";
+            checkbox.width = "20px";
+            checkbox.height = "20px";
+            checkbox.isChecked = true;
+            checkbox.color = pointsOfInterest[meshLen-1].toHexString();
+    
+            var input32 = new BABYLON.GUI.InputText();
+            input32.width = 0.2;
+            input32.maxWidth = 0.2;
+            input32.height = "30px";
+            input32.top = ""+diff+ "%";
+            input32.left = "4%";
+            input32.text = "";
+            input32.color = "white";
+            input32.background = "#e8b172";
+            input32.thickness = 2;
+            input32.isVisible = true;
+            
+            var input3 = new BABYLON.GUI.InputText();
+            input3.width = 0.2;
+            input3.maxWidth = 0.2;
+            input3.height = "30px";
+            input3.top = ""+diff+ "%";
+            input3.left = "27.5%";
+            input3.text = "";
+            input3.color = "white";
+            input3.background = "#e8b172";
+            input3.thickness = 2;
+            input3.isVisible = true;
+            diff+=5;
+            //advancedTextureJournal.addControl(input3);
+
+            //var m = pointsOfInterest[meshLen-1].clone("ASD");
+            advancedTextureJournal.addControl(input3);
+            advancedTextureJournal.addControl(input32);
+            advancedTextureJournal.addControl(checkbox);
+        
+    });
+
+    
+    var layer = new BABYLON.Layer('','https://raw.githubusercontent.com/fossilvr/fossilvr.github.io/master/assets/ui/Group137.png', scene, true);
+    var advancedTextureJournal = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UIJ");
+
+    
+    scene.onBeforeRenderObservable.add(function () {
+    //console.log(pointsOfInterest.length);
+    
+    });
+
+
+    var textHint = new BABYLON.GUI.TextBlock();
+    textHint.text = "Double click on a point of interest to add a pin. \n Drag using left mouse button to rotate. \n Scroll to zoom in and out.";
+    textHint.color = "black";
+    textHint.fontSize = 20;
+    textHint.top = "-26%";
+    textHint.left = "25%";
+    
+    var text1 = new BABYLON.GUI.TextBlock();
+    text1.text = "Fossil ID:\tFossil " + 3 + "\n\nLocation: \tAshara Desert, Mountain " + 3 + "\n\nFound by: \t Jessica Roberts";
+    text1.color = "black";
+    text1.fontSize = 8;
+    text1.top = "-9%";
+    text1.left = "30%";
+
+    var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but","", "assets/ui/DoneButton.png");
+    button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    button1.width = 0.15;
+    button1.height = 0.08;
+    button1.left = "12%";
+    button1.top = "20%";
+    button1.thickness = 0; 
+    button1.onPointerUpObservable.add(function(){
+        journalVisible = false;
+    });
+    advancedTextureJournal.addControl(button1);
+    advancedTextureJournal.addControl(textHint);
+    advancedTextureJournal.addControl(text1);
+	return scene;
+};
 
 const scene = createScene(); 
 const scene1 = createScene1();
+const sceneJournal = createSceneJournal();
     
         engine.runRenderLoop(function () {
-            if(playGame){
-                
-                scene1.dispose();
-                scene.render();
+            if(playGame && journalVisible){
+                //scene.dispose();
+                sceneJournal.render();
             }
 
+            else if(playGame && !journalVisible){
                 
+                //scene1.dispose();
+                scene.render();   
+            }
+ 
             else{
                 
                 scene1.render();
 
             }
+            //scene.render();
+            
         });
 
     
