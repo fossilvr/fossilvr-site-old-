@@ -1,24 +1,19 @@
-/*TODO: 
-1. Selecting mesh for the second time, display journal.
-2. Journal renders the model.
-3. Pins can be picked.
-
-
-*/
 const canvas = document.getElementById("renderCanvas"); // Get the canvas element
 const engine = new BABYLON.Engine(canvas, true,{ stencil: true }); // Generate the BABYLON 3D engine
-var hannah;
+var hannah, hannahTalking, hannahWaving; //Stores Hannah model
 var playGame = false;
 var muteScene0 = false;
 var muteScene1 = false;
-var globalVolumeScene0 = 0;
-var globalVolumeScene1 = 0;
-var journalVisible = false;
+var globalVolumeScene0 = 0; //Volume scene 0
+var globalVolumeScene1 = 0; //Volume scene 1
+var journalVisible = false; //Show Journal?
 const createScene =  () => {
     
-    //-------VARIABLES-------------------------------
+    //------------------SCENE VARIABLES-------------------------------
     var picked = false;
     var mapVisible = false;
+    var flag2, flag3; //Holds flag copies
+    var pin;
 
     var pickUpR1, pickUpR2, pickUpR3, pickUpR4, pickUpR5, pickUpR6,pickUpSkull, pickUpSkull2, pickUpSkull3;
     var aspectRatio = screen.width/screen.height;
@@ -31,7 +26,8 @@ const createScene =  () => {
     var cancelled = false;
     var showHint = false;
     muteScene1 = muteScene0;
-    globalVolumeScene1 = BABYLON.Engine.audioEngine.getGlobalVolume(0);;
+    globalVolumeScene1 = BABYLON.Engine.audioEngine.getGlobalVolume(0);
+
     //-----------SCENE INITIALIZATIONS------------------------
     const scene = new BABYLON.Scene(engine);
     scene.enablePhysics();
@@ -44,17 +40,15 @@ const createScene =  () => {
     //---------------CAMERAS----------------------------------
     var camera = new BABYLON.UniversalCamera("UniversalCamera", new BABYLON.Vector3(0, 0, -10), scene);
     camera.setTarget(BABYLON.Vector3.Zero());
-    
-    // camera.ellipsoid = new BABYLON.Vector3(.4, .8, .4);
-    // camera.checkCollisions = true;
     camera.attachControl(canvas, true);
-    // camera.speed = 5;
-    // camera.layerMask = 1;
     camera.inertia = 0.5;
 
+    //Map Camera, looks at the scene from a birds eye view
     var camera2 = new BABYLON.ArcRotateCamera("Camera2", -Math.PI/2, 0.5, 110, BABYLON.Vector3.Zero(), scene);
     scene.activeCameras = [];
     scene.activeCameras.push(camera);
+
+    //GLSL Shader
     BABYLON.Effect.ShadersStore["customFragmentShader"] = `
     #ifdef GL_ES
         precision highp float;
@@ -82,6 +76,7 @@ const createScene =  () => {
     }
     `;
 
+    //Apply post processing on the map
     var postProcess = new BABYLON.PostProcess("My custom post process", "custom", ["screenSize", "threshold"], null, 0.25, camera2);
     postProcess.onApply = function (effect) {
         effect.setFloat2("screenSize", postProcess.width, postProcess.height);
@@ -90,17 +85,13 @@ const createScene =  () => {
     camera2.layerMask = 0;
 
     //--------------------LIGHTS-----------------------------
-    //Hemispherical light can't cast shadows
-    //const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0));
-    //light.intensity = 0.05;
-    var light2 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -0.8, 0.4), scene);
-    light2.position = new BABYLON.Vector3(0,20,10);
-    light2.intensity = 3;
+    var lightScene1 = new BABYLON.DirectionalLight("DirectionalLight", new BABYLON.Vector3(0, -0.8, 0.4), scene);
+    lightScene1.position = new BABYLON.Vector3(0,20,10);
+    lightScene1.intensity = 3;
     scene.createDefaultEnvironment({ createSkybox: false, createGround: false });
-    //var light2 = new BABYLON.SpotLight("spotLight", new BABYLON.Vector3(3, 2.5, 8), new BABYLON.Vector3(0, 0, -1), Math.PI / 3, 2, scene);
 
     //------------------SHADOWS----------------------------------------
-    var shadowGenerator = new BABYLON.ShadowGenerator(2048, light2);
+    var shadowGenerator = new BABYLON.ShadowGenerator(2048, lightScene1);
     shadowGenerator.usePercentageCloserFiltering = true;
     shadowGenerator.filteringQuality = BABYLON.ShadowGenerator.QUALITY_MEDIUM;
 
@@ -110,14 +101,14 @@ const createScene =  () => {
     groundMat.albedoColor = new BABYLON.Color3(150/255, 110/255, 34/255);
     groundMat.metallic = 0.4;
     groundMat.roughness = 1;
-    //groundMat.diffuseTexture = new BABYLON.Texture("assets/stone_ground.jpg");
-    ground.material = groundMat; //Place the material property of the ground
+    ground.material = groundMat;
     ground.checkCollisions= true;
     ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.PlaneImpostor, { mass: 0, restitution: 0.5, friction:0.1 }, scene);
     ground.receiveShadows = true;
     ground.layerMask = 1;
 
     //-----------------WALLS----------------------------
+    //To prevent map fall off
 
     const wall1 = BABYLON.MeshBuilder.CreatePlane("Wall1", {width: 200, height: 200} );
     wall1.position = new BABYLON.Vector3(0,0,-30);
@@ -178,18 +169,6 @@ const createScene =  () => {
 
     //-----------------HIGHLIGHT LAYER----------------------------
     var hl = new BABYLON.HighlightLayer("hl1", scene);
-    
-    //var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
-
-    //Pointer stuff, make sure it isnt moving around on loading the journal
-    // var journalPlane = new BABYLON.GUI.Image("but", "assets/ui/Journal1.png");
-    // journalPlane.width = "100%";
-    // journalPlane.height = "100%";
-    // journalPlane.verticalAlignment = 1;
-    // advancedTexture.addControl(journalPlane);   
-    // journalPlane.isVisible = false; 
-
-
 
     //--------------------MAP----------------------------------
     var rt2 = new BABYLON.RenderTargetTexture("depth", 1024, scene, true, true);
@@ -198,37 +177,30 @@ const createScene =  () => {
     rt2.renderList = scene.meshes;
 
     
-    var mon2 = BABYLON.Mesh.CreatePlane("plane", 6, scene);
-    // mon2.position = new BABYLON.Vector3(canvas.width/640, canvas.height/480, 20)
+    var mon2 = BABYLON.Mesh.CreatePlane("MapPlane", 6, scene);
     mon2.position = new BABYLON.Vector3(0, 0, 10)
-    var mon2mat = new BABYLON.StandardMaterial("texturePlane", scene);
+    var mon2mat = new BABYLON.StandardMaterial("mapTexturePlane", scene);
     mon2mat.diffuseColor = new BABYLON.Color3(0,1,1);
     mon2mat.diffuseTexture = rt2;
     mon2mat.specularColor = BABYLON.Color3.Black();
     mon2mat.ambientColor = new BABYLON.Color3(0.5,1,0);
-
-     mon2mat.diffuseTexture.uScale = 1/aspectRatio; // zoom
-     //mon2mat.diffuseTexture.vScale = 1;
+    mon2mat.diffuseTexture.uScale = 1/aspectRatio; // zoom
     mon2mat.diffuseTexture.uOffset = 1.215;
-     mon2mat.diffuseTexture.level = 1.2; // intensity
-
+    mon2mat.diffuseTexture.level = 1.2; // intensity
     mon2mat.emissiveColor = new BABYLON.Color3(1,1,1); // backlight
 	mon2.material = mon2mat;
 	mon2.parent = camera;
 	mon2.parent = camera;
-    mon2.renderingGroupId = 1;
-	//mon2.layerMask = 1;
-
-	// mon2.enableEdgesRendering(epsilon);	 
+    mon2.renderingGroupId = 1;;	 
 	mon2.edgesWidth = 5.0;
 	mon2.edgesColor = new BABYLON.Color4(1, 1, 1, 1);
     mon2.isVisible = false;
 
     //------------------UI-------------------------------------
 
-    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI");
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("MainGameUI");
     
-    var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but","", "assets/ui/Button1.png");
+    var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("HintButton","", "assets/ui/Button1.png");
     button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
     button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
     button1.width = 0.06;
@@ -238,7 +210,7 @@ const createScene =  () => {
     button1.thickness = 0; 
 
 
-    var button2 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/Button2.png");
+    var button2 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("JournalButton","", "assets/ui/Button2.png");
     button2.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
     button2.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
     button2.width = 0.06;
@@ -247,7 +219,7 @@ const createScene =  () => {
     button2.top = canvas.height - canvas.height/1.2;
     button2.thickness = 0; 
 
-    var button3 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/Group 53.png");
+    var button3 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("MapButton","", "assets/ui/Group 53.png");
     button3.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
     button3.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
     button3.width = 0.06;
@@ -255,35 +227,7 @@ const createScene =  () => {
     button3.left = -canvas.width+canvas.width/1.05;
     button3.top = canvas.height - canvas.height/1.4;
     button3.thickness = 0;
-
-    var input = new BABYLON.GUI.InputText();
-    input.width = 0.3;
-    input.maxWidth = 0.05;
-    input.height = "40px";
-    input.top = canvas.height/2-canvas.height/2.15;
-    input.left = canvas.width/2 - canvas.width/3.4;
-    input.text = "";
-    input.color = "white";
-    input.background = "black";
-    input.thickness = 2;
-    input.isVisible = false;
-
-    var input2 = new BABYLON.GUI.InputText();
-    input2.width = 0.3;
-    input2.maxWidth = 0.05;
-    input2.height = "40px";
-    input2.top = canvas.height/2-canvas.height/4.4;
-    input2.left = canvas.width/2 - canvas.width/3.4;
-    input2.text = "";
-    input2.color = "white";
-    input2.background = "black";
-    input2.isVisible = false;
     
-    var fossilJournal;
-    var newPin;
-    var mon4;
-    var mon4mat;
-    var t;
     button2.onPointerUpObservable.add(function() {
         console.log(journalVisible);
         if(journalVisible==false){
@@ -294,6 +238,8 @@ const createScene =  () => {
         journalVisible = false;
     }
     });
+
+    //Add Hint
     var advancedTextureHint = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("Hint");
     var hintImg = new BABYLON.GUI.Image("but", "assets/ui/paper-tag.png");
     hintImg.top = "-10%"
@@ -305,6 +251,7 @@ const createScene =  () => {
     textHint.fontSize = 20;
     textHint.top = "-10%";
     textHint.left = "4%";
+
     button1.onPointerUpObservable.add(function() {
         if(!showHint){
         console.log("IN");
@@ -373,7 +320,6 @@ const createScene =  () => {
     buttonMute.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
     buttonMute.width = 0.06;
     buttonMute.height = 0.06*aspectRatio;
-    //button2.left = -canvas.width+canvas.width/1.05;
     buttonMute.top = canvas.height - canvas.height/1.1;
     buttonMute.thickness = 0;
     var advancedTextureChameleonPic = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("Chameleon");
@@ -444,7 +390,6 @@ const createScene =  () => {
                     advancedTexture.addControl(button2);
                     advancedTexture.addControl(button3);
                     cancelled = true;
-                    //document.getElementById('canvas_div_no_cursor').style.cursor = "none";
                     break;
 
         }
@@ -456,6 +401,8 @@ const createScene =  () => {
     button5.onPointerUpObservable.add(function(){
         console.log("In");
         dialogueCounter = 0;
+        hannahWaving.setEnabled(true);
+        hannahTalking.setEnabled(false);
         advancedTexture.removeControl(button4);
         advancedTexture.removeControl(dispBut);
         advancedTexture.removeControl(button5);
@@ -465,13 +412,6 @@ const createScene =  () => {
         cancelled = true;
     });
 
-    
-
-    
-
-    
-    
-
     //---------------PLAYER----------------------------------
     const hero = BABYLON.Mesh.CreateBox('hero', 1.0, scene, false, BABYLON.Mesh.FRONTSIDE);
     hero.position.x = 0.0;
@@ -479,8 +419,6 @@ const createScene =  () => {
     hero.position.z = -25.0;
     hero.physicsImpostor = new BABYLON.PhysicsImpostor(hero, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 1, restitution: 0.0, friction: 0.1 }, scene);	
     hero.isPickable = false;	
-    //hero.physicsImpostor.physicsBody.fixedRotation = true;
-    // hero.physicsImpostor.physicsBody.updateMassProperties();
 
     // pointer
     var pointer = BABYLON.Mesh.CreateSphere("Sphere", 16.0, 0.01, scene, false, BABYLON.Mesh.DOUBLESIDE);
@@ -590,27 +528,6 @@ const createScene =  () => {
         
     });
 
-    /*//WASD
-    camera.keysUp.push(87); 
-    camera.keysDown.push(83);            
-    camera.keysRight.push(68);
-    camera.keysLeft.push(65);
-    */
-
-    
-    //Jump
-   /* function jump(){
-      hero.physicsImpostor.applyImpulse(new BABYLON.Vector3(1, 20, -1), hero.getAbsolutePosition());
-    }
-
-    document.body.onkeyup = function(e){
-      if(e.keyCode == 32){
-        your code
-        console.log("jump");
-        setTimeout(jump(), 10000); 
-
-      }
-    }*/
 
     //------------MESH PICKING--------------------------
     
@@ -644,7 +561,6 @@ const createScene =  () => {
              }
              return false;
          });
-         //
             if(hit.pickedMesh){
                 if(hit.pickedMesh==pickUpSkull){ 
                     showInfoPanel("1","1");
@@ -658,7 +574,6 @@ const createScene =  () => {
                     showInfoPanel("3","3");
                     pickedUp = false;
                     } 
-                //hit.pickedMesh.physicsImpostor.sleep();
                 else {
                     hit.pickedMesh.physicsImpostor.sleep();
                     currMesh = hit.pickedMesh;
@@ -681,6 +596,8 @@ const createScene =  () => {
         startingPoint = currMesh.position;
         }
     };
+
+    //------------- FOSSIL FOUND PANEL ----------------------------------
     
     var advancedTextureInfo = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI2");
     var mon3 = new BABYLON.GUI.Image("but", "assets/ui/Group68.png");
@@ -694,10 +611,6 @@ const createScene =  () => {
     advancedTexture.removeControl(button3);
     console.log("Inside Info Panel",fosNum);
     mon3.isVisible = true;
-    //advancedTextureInfo.parent = camera;
-    //advancedTextureInfo.renderingGroupId = 1;
-    //advancedTextureInfo.isVisible = true;
-
 
     var text1 = new BABYLON.GUI.TextBlock();
     text1.text = "Fossil ID:\tFossil " + fosNum + "\n\nLocation: \tAshara Desert, Mountain " + mountNum + "\n\nFound by: \t Jessica Roberts";
@@ -705,16 +618,13 @@ const createScene =  () => {
     text1.fontSize = 20;
     text1.top = "8%";
     text1.left = "19%";
-    advancedTextureInfo.addControl(mon3);
-    advancedTextureInfo.addControl(text1);
-    //advancedTextureInfo.renderingGroupId = 1;
+    
 
     var buttonSend = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/Group13.png");
     buttonSend.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
     buttonSend.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
     buttonSend.width = 0.23;
-    buttonSend.height = 0.08;
-    //button1.left = -canvas.width+canvas.width/1.05;
+    buttonSend.height = 0.1;
     buttonSend.top = "28%";
     buttonSend.left="20%";
     buttonSend.thickness = 0;
@@ -737,87 +647,15 @@ const createScene =  () => {
         advancedTextureInfo.removeControl(text1);
         advancedTextureInfo.removeControl(buttonSend);
     });
+    
+    advancedTextureInfo.addControl(mon3);
+    advancedTextureInfo.addControl(text1);
     advancedTextureInfo.addControl(buttonSend);
     
     }
-    meshLen = 3;
-    var advancedTextureJournal = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("Journal UI");
-    var buttonSet = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/StartButton.png");
-    buttonSet.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-    buttonSet.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-    buttonSet.width = 0.12;
-    buttonSet.height = 0.08;
-    //button1.left = -canvas.width+canvas.width/1.05;
-    buttonSet.top = "-9%";
-    buttonSet.left = "8%";
-    buttonSet.thickness = 0;
-    buttonSet.cornerRadius = 5;
 
 
-    //Why isnt this working?
-    // var debugShow = false;
-    // scene.onKeyboardObservable.add((kbInfo) => {
-	// 	switch (kbInfo.type) {
-	// 		case BABYLON.KeyboardEventTypes.KEYDOWN:
-	// 			switch (kbInfo.event.key) {
-    //                 case "m":
-    //                 case "M":
-    //                     if(debugShow==false)
-    //                     scene.debugLayer.show();
-    //                     else
-    //                     scene.debugLayer.hide();
-    //                 break;
-    //                 case "n":
-    //                 case "N":
-    //                     scene.debugLayer.hide();
-    //                 break;
-    //             }
-	// 		break;
-	// 	}
-	// });
-      
 
-	
-	// var pointerlockchange = function () {
-	// 	var controlEnabled = document.mozPointerLockElement || document.webkitPointerLockElement || document.msPointerLockElement || document.pointerLockElement || null;
-		
-	// 	// If the user is already locked
-	// 	if (!controlEnabled) {
-	// 		//camera.detachControl(canvas);
-	// 		isLocked = false;
-	// 	} else {
-	// 		//camera.attachControl(canvas);
-	// 		isLocked = true;
-	// 	}
-	// };
-
-    // var canvasPtrDown = function(evt){
-    // var forward = camera.getTarget().subtract(camera.position).normalize();
-    // var ray = new BABYLON.Ray(camera.position,forward,100);	
-    // var hit = scene.pickWithRay(ray);
-	// var rayHelper = new BABYLON.RayHelper(ray);	
-    //  rayHelper.show(scene);
-    //     console.log(rayHelper, BABYLON.Color3(0,0,0));
-    //     if(hit.pickedMesh){
-    //         currMesh = hit.pickedMesh;
-    //         startingPoint = hit.pickedPoint;
-    //     }
-    //     currMesh.position.x = startingPoint.x;
-    //     currMesh.position.y = startingPoint.y;
-    //     currMesh.position.z = startingPoint.z;
-    //     startingPoint = currMesh.position;
-    // }
-	
-	// Attach events to the document
-	// document.addEventListener("pointerlockchange", pointerlockchange, false);
-	// document.addEventListener("mspointerlockchange", pointerlockchange, false);
-	// document.addEventListener("mozpointerlockchange", pointerlockchange, false);
-	// document.addEventListener("webkitpointerlockchange", pointerlockchange, false);
-
-    //canvas.addEventListener("pointermove", canvasPtrDown, false);
-    
-    var flag2, flag3;
-    var pin;
     // -------------------------------FLAG -------------------------
     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/1_flag.glb").then((result) => {
             result.meshes[0].position.x = 5;
@@ -835,29 +673,6 @@ const createScene =  () => {
             flag3.position = new BABYLON.Vector3(18.1,0,-4.9);
     });
 
-    BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/pin.glb").then((result) => { 
-        var pinHead = scene.getMeshByName("Pin_primitive0");
-        var pinBody = scene.getMeshByName("Pin_primitive1");
-        pinHead.isVisible = false;
-        pinBody.isVisible = false;
-        newPin = BABYLON.Mesh.MergeMeshes([pinHead,pinBody], true, true, undefined, false, true);
-        newPin.setParent(null);
-        newPin.scaling = new BABYLON.Vector3(0.01,0.01,0.01);
-        newPin.isVisible = false;
-        newPin.renderingGroupId = 1;
-        pinHead.dispose();
-        pinBody.dispose();
-        // result.meshes[0].scale = new BABYLON.Vector3(0.1,0.1,0.1);
-        // // result.meshes.forEach(function (mesh) {
-        // //     shadowGenerator.getShadowMap().renderList.push(mesh);
-        // // });
-        // result.meshes[0].isPickable = true;
-        // result.meshes[0].isVisible = false;
-        // pin = result.meshes[0].clone("PIN");
-        // pin.isVisible = false;
-        // pin.renderingGroupId = 1;
-});
-
 
 
 
@@ -870,27 +685,12 @@ const createScene =  () => {
 
         result.meshes[0].rotationQuaternion = null;
         result.meshes[0].rotate.y =Math.PI/2;    
-        //shadowGenerator.addShadowCaster(result.meshes[0]);
         result.meshes[0].getChildMeshes().forEach((m)=>{
             m.isPickable = false;
             shadowGenerator.getShadowMap().renderList.push(m);
         });
     });
 
-
-    //----------------------------MAMMOTH-----------------------------------
-    // BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/11_mammoth.glb").then((result) => {
-    //     result.meshes[0].position.z = 6;
-    //     result.meshes[0].position.x = -14;
-    //     result.meshes[0].scaling = new BABYLON.Vector3(0.075, 0.075, 0.075);
-    //     result.meshes[0].isPickable = false;
-    //         result.meshes[0].rotationQuaternion = null;
-    //         result.meshes[0].rotate.y =-Math.PI/2;
-    //         result.meshes[0].getChildMeshes().forEach((m)=>{
-    //             m.isPickable = false;
-    //             shadowGenerator.getShadowMap().renderList.push(m);
-    //         });     
-    // });
 
      //----------------------------DESERT PLANTS-----------------------------------
      BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/6_desertplants.glb").then((result) => {
@@ -912,10 +712,6 @@ const createScene =  () => {
         shadowGenerator.getShadowMap().renderList.push(cactus03);
         const aloe01 = scene.getMeshByName("Aloe._01_aloe.002");
         shadowGenerator.getShadowMap().renderList.push(aloe01);
-        // cactus01.isVisible = false;
-        // cactus02.isVisible = false;
-        // cactus03.isVisible = false;
-        // aloe01.isVisible = false;
 
         rock01.scaling = new BABYLON.Vector3(7,7,7);
         rock02.scaling = new BABYLON.Vector3(7,7,7);
@@ -1004,8 +800,6 @@ const createScene =  () => {
         r41.position = new BABYLON.Vector3(5,0,40);
         r15.position = new BABYLON.Vector3(20,0,40);
         r25.position = new BABYLON.Vector3(40,0,40);
-        //r32.position = new BABYLON.Vector3(20,0,40);
-        //r12.position = new BABYLON.Vector3(40,0,40);
 
         r12.position = new BABYLON.Vector3(-40,-5,-40);
         r22.position = new BABYLON.Vector3(-40,0,-25);
@@ -1028,13 +822,6 @@ const createScene =  () => {
         r44.position = new BABYLON.Vector3(5,0,-40);
         r36.position = new BABYLON.Vector3(20,0,-40);
         r46.position = new BABYLON.Vector3(40,0,-40);
-
-        // pickUpR1 = rock07.createInstance("pickUpR1");
-        // pickUpR2 = rock07.createInstance("pickUpR2");
-        // pickUpR3 = rock07.createInstance("pickUpR3");
-        // pickUpR4 = rock07.createInstance("pickUpR4");
-        // pickUpR5 = rock07.createInstance("pickUpR5");
-        // pickUpR6 = rock07.createInstance("pickUpR6");
 
         pickUpR1 = rock07.clone("pickUpR1");
         pickUpR1.setParent(null);
@@ -1185,16 +972,36 @@ const createScene =  () => {
 
     });
 
-     //-----HANNAH----
-     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/ui/talking.glb").then((result) => {
+     //-----HANNAH WAVING ----
+     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/ui/waving.glb").then((result) => {
         result.meshes[0].position.z = 4;
         result.meshes[0].position.x = 7;
         result.meshes[0].isPickable = false;
 
-            result.meshes[0].rotationQuaternion = null;
-            result.meshes[0].rotate.y =Math.PI/2;   
+        result.meshes[0].rotationQuaternion = null;
+        result.meshes[0].rotate.y =Math.PI/2;   
         hannah = result.meshes[0].position; 
+        //result.setEnabled = false;
+        hannahWaving = scene.getTransformNodeByName("Kira");
+        hannahWaving.name = "KiraWAving";
+        console.log(hannahWaving);
+        hannahWaving.setEnabled(true);
     });
+
+    BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/ui/talking.glb").then((result) => {
+        result.meshes[0].position.z = 4;
+        result.meshes[0].position.x = 7;
+        result.meshes[0].isPickable = false;
+
+        result.meshes[0].rotationQuaternion = null;
+        result.meshes[0].rotate.y =Math.PI/2;   
+        hannahTalking = scene.getTransformNodeByName("Kira");
+        hannahTalking.name = "KiraTalking";
+        console.log(hannahTalking);
+        hannahTalking.setEnabled(false);
+        //hannahTalking.setEnabled = false; 
+    });
+
     // ------ DESERT PLANTS --------
     BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/pal.glb").then((result) => {
         result.meshes[0].scaling = new BABYLON.Vector3(0.7, 0.7, -0.6);
@@ -1206,32 +1013,26 @@ const createScene =  () => {
         var fossil1 = scene.getMeshByName("13634_AmmoniteFossil_v1_l2");
         var fossil2 = scene.getMeshByName("13638_Tyrannosaurus_Rex_Skull_Fossil_v1_L1");
         fossil.checkCollisions = true;
-        //fossil.renderingGroupId = 1;
-        //Under rock coordinates
+
         fossil.position.x = 27.8;
         fossil.position.y = -0.5;
         fossil.position.z = -5.3;
         pickUpSkull = fossil;
         pickUpSkull.setParent(null);
         pickUpSkull.position = new BABYLON.Vector3(5.2,0,-15)
-        //pickUpSkull.physicsImpostor = new BABYLON.PhysicsImpostor(pickUpSkull, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 1, restitution: 0, friction: 0.1 }, scene);
         pickUpSkull.applyGravity = true;
 
         pickUpSkull2 = fossil1;
         pickUpSkull2.setParent(null);
         pickUpSkull2.position = new BABYLON.Vector3(-15.2,0.3,-20)
-        //pickUpSkull2.physicsImpostor = new BABYLON.PhysicsImpostor(pickUpR1, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 1, restitution: 0, friction: 0.1 }, scene);
         pickUpSkull2.applyGravity = true;
 
         pickUpSkull3 = fossil2;
         pickUpSkull3.setParent(null);
         pickUpSkull3.position = new BABYLON.Vector3(18.2,0,-5)
         pickUpSkull2.rotation = new BABYLON.Vector3(1.7,0, 1.7);
-        //pickUpSkull.physicsImpostor = new BABYLON.PhysicsImpostor(pickUpR1, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 1, restitution: 0, friction: 0.1 }, scene);
         pickUpSkull3.applyGravity = true;
         
-        //Outside rocks, for testing purposes
-
         result.meshes[0].rotationQuaternion = null;
         result.meshes[0].rotate(BABYLON.Vector3.Up(),Math.PI/2);    
     });
@@ -1240,6 +1041,9 @@ const createScene =  () => {
     scene.onBeforeRenderObservable.add(function () {
         diff = 11.5;
 		if(!cancelled && hannah && BABYLON.Vector3.Distance(new BABYLON.Vector3(7,0,4),camera.position)<10){
+            //Add talking hannah model here
+            hannahWaving.setEnabled(false);
+            hannahTalking.setEnabled(true);
             advancedTexture.removeControl(button1);
             advancedTexture.removeControl(button2);
             advancedTexture.removeControl(button3);
@@ -1261,6 +1065,8 @@ const createScene =  () => {
         if(dialogueCounter>8){
             advancedTexture.removeControl(button4);
             advancedTexture.removeControl(dispBut);
+            hannahWaving.setEnabled(true);
+            hannahTalking.setEnabled(false);
         }
 
         if (xPressed) {
@@ -1282,23 +1088,7 @@ const createScene =  () => {
             }                
         }
 
-        while(meshLen>0){
-            var input3 = new BABYLON.GUI.InputText();
-            input3.width = 0.15;
-            input3.maxWidth = 0.15;
-            input3.height = "25px";
-            input3.top = ""+diff+ "%";
-            input3.left = "21%";
-            input3.text = "";
-            input3.color = "white";
-            input3.background = "white";
-            input3.thickness = 2;
-            input3.isVisible = true;
-            diff+=4;
-            //advancedTextureJournal.addControl(input3);
-            meshLen--;
-            journalInputs.push(input3);
-        }
+  
 	});
     
 //----------DEBUGGER-------------------
@@ -1378,47 +1168,47 @@ scene.onKeyboardObservable.add((kbInfo) => {
     advancedTexture.addControl(button1); 
     advancedTexture.addControl(button2); 
     advancedTexture.addControl(button3);
-    advancedTexture.addControl(input);
-    advancedTexture.addControl(input2);
     advancedTexture.addControl(buttonMute);
+
     return scene;
 }
 
 const createScene1 = () => {
+    
+    //Inititalize scene with lights and camera (also change cursor)
     const scene1 = new BABYLON.Scene(engine);
     var camera = new BABYLON.UniversalCamera("UniversalCamera", new BABYLON.Vector3(0, 0, -10), scene1);
     camera.setTarget(BABYLON.Vector3.Zero());
-    
-    // camera.ellipsoid = new BABYLON.Vector3(.4, .8, .4);
-    // camera.checkCollisions = true;
-    // camera.speed = 5;
-    // camera.layerMask = 1;
     camera.inertia = 0.5;
     var aspectRatio = screen.width/screen.height;
+    var light = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene1);
+    light.intensity = 2.4;
+    document.getElementById('canvas_div_no_cursor').style.cursor = "url(\"assets/cc.svg\"), auto";
 
+    //Add plane to use as the background
     const plane = BABYLON.MeshBuilder.CreatePlane("plane", {height:10, width: 20},scene1);
     var material = new BABYLON.StandardMaterial("texture1", scene1);
     material.diffuseTexture = new BABYLON.Texture("assets/BackgroundStart.png ", scene1);
     material.diffuseTexture.uScale = 1.0;
     material.diffuseTexture.vScale = 1.0;
     plane.material = material;
-    var light = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene1);
-    light.intensity = 2.4;
-    document.getElementById('canvas_div_no_cursor').style.cursor = "url(\"assets/cc.svg\"), auto";
+    
+    
+    //Add button
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("StartScreenUI");
 
-    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI1");
-    var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/StartButton.png");
+    //Start button
+    var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("StartButton","", "assets/ui/StartButton.png");
     button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
     button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
     button1.width = 0.12;
     button1.height = 0.08;
-    //button1.left = -canvas.width+canvas.width/1.05;
     button1.top = canvas.height - canvas.height/1.2;
     button1.thickness = 0;
     button1.cornerRadius = 5;
 
-
-    var button2 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but2","", "assets/ui/Button1.png");
+    //Settings Button
+    var button2 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("Settings","", "assets/ui/Button1.png");
     button2.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
     button2.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
     button2.width = 0.06;
@@ -1427,61 +1217,67 @@ const createScene1 = () => {
     button2.top = canvas.height - canvas.height/1.1;
     button2.thickness = 0;
     
-    var button3s1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but3","", "assets/ui/unmute.png");
+    //Mute button
+    var buttonMute1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("MuteButton","", "assets/ui/unmute.png");
     
-    button3s1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-    button3s1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-    button3s1.width = 0.06;
-    button3s1.height = 0.06*aspectRatio;
-    //button2.left = -canvas.width+canvas.width/1.05;
-    button3s1.top = canvas.height - canvas.height/1.1;
-    button3s1.thickness = 0;
+    buttonMute1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    buttonMute1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    buttonMute1.width = 0.06;
+    buttonMute1.height = 0.06*aspectRatio;
+    buttonMute1.top = canvas.height - canvas.height/1.1;
+    buttonMute1.thickness = 0;
 
-
+    //Add buttons to texture
     advancedTexture.addControl(button1); 
-    //advancedTexture.addControl(button2); 
-    advancedTexture.addControl(button3s1);
+    advancedTexture.addControl(buttonMute1);
 
+    //Start button observable
     button1.onPointerUpObservable.add(function() {
         playGame = true;
-    //     engine.displayLoadingUI();
+        engine.displayLoadingUI();
 
-    // setTimeout(function(){
-    //     engine.hideLoadingUI();
-    // },5000);
-    // });
-    //UNCOMMENT ABOVE
+    setTimeout(function(){
+        engine.hideLoadingUI();
+    },5000);
     });
-    button3s1.onPointerUpObservable.add(function(){
+
+    //Mute button observable
+    buttonMute1.onPointerUpObservable.add(function(){
         if(!muteScene0){
             globalVolumeScene0 = BABYLON.Engine.audioEngine.getGlobalVolume(0);
             BABYLON.Engine.audioEngine.setGlobalVolume(0);
-            button3s1.children[0].source = "assets/ui/mute.png";
+            buttonMute1.children[0].source = "assets/ui/mute.png";
             muteScene0 = true;
         }
         else{
             BABYLON.Engine.audioEngine.setGlobalVolume(globalVolumeScene0);
-            button3s1.children[0].source = "assets/ui/unmute.png";
+            buttonMute1.children[0].source = "assets/ui/unmute.png";
             muteScene0 = false;
         }
     });
+
     return scene1;
 }
 
 const createSceneJournal = function() {
-    var diff = 13.3;
+    
+    //Scene variables - self explanatory
+    var lineSpacingInputs = 13.4;
+    var pointsOfInterest = [];
+    var meshLen = 0;
+    var triceraSkull;
+
+    //Initialize scene lights and camera
 	var scene = new BABYLON.Scene(engine);
+    scene.clearColor = new BABYLON.Color3(0.96, 0.76, 0.23);
 	var camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 3, new BABYLON.Vector3(0,-0.3,0), scene);
 	camera.attachControl(canvas, true);
     var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
     camera.lowerRadiusLimit = 0.1;
     camera.wheelPrecision = 15;
-    // Default intensity is 1. Let's dim the light a small amount
     light.intensity = 0.7;
 
-    var pointsOfInterest = [];
-    var meshLen = 0;
-    var triceraSkull;
+    //Import tricera skull model
     BABYLON.SceneLoader.ImportMesh("", "https://raw.githubusercontent.com/fossilvr/fossilvr.github.io/master/assets/", "pal.glb",scene, function(meshes){
         meshes.forEach(function(mesh){
             if(mesh.name != '13637_Triceratops_Skull_Fossil_v1_L2') mesh.isVisible = false;
@@ -1492,9 +1288,11 @@ const createSceneJournal = function() {
         tricerSkull.scaling = new BABYLON.Vector3(50,50,50);
         triceraSkull.position = new BABYLON.Vector3(0,1,0);
     });
-    //scene.createDefaultCameraOrLight(true, true, true);
 
-    window.addEventListener('dblclick', function() {        
+
+    //Double click to add pins to the model
+    window.addEventListener('dblclick', function() {       
+
         var pickResult = scene.pick(scene.pointerX, scene.pointerY);        
 
         var mat = new BABYLON.StandardMaterial('mat1', this.scene);
@@ -1520,15 +1318,11 @@ const createSceneJournal = function() {
         mesh.scaling = new BABYLON.Vector3(0.05,0.05,0.05);       
         pointsOfInterest.push(mat.diffuseColor);
         mesh.position = pickResult.pickedPoint;
-			
-        // !!!!!!!!!!!!!!!!!!!!!
-        // ROTATION MUST BE HERE
-        // !!!!!!!!!!!!!!!!!!!!!
                         
         var axis1 = pickResult.getNormal();							        		
         var axis2 = BABYLON.Vector3.Up();
         var axis3 = BABYLON.Vector3.Up();
-        var start = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, 0);	//camera.position			
+        var start = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, 0);				
 
         BABYLON.Vector3.CrossToRef(start, axis1, axis2);
         BABYLON.Vector3.CrossToRef(axis2, axis1, axis3);
@@ -1536,57 +1330,54 @@ const createSceneJournal = function() {
         var quat = BABYLON.Quaternion.RotationYawPitchRoll(tmpVec.y, tmpVec.x, tmpVec.z);
         mesh.rotationQuaternion = quat;
 
-        
+        //Stores pin count
         meshLen++;
 
-            var checkbox = new BABYLON.GUI.Checkbox();
-            checkbox.top = ""+diff+ "%";
-            checkbox.left ="-9.5%";
-            checkbox.width = "20px";
-            checkbox.height = "20px";
-            checkbox.isChecked = true;
-            checkbox.color = pointsOfInterest[meshLen-1].toHexString();
-    
-            var input32 = new BABYLON.GUI.InputText();
-            input32.width = 0.2;
-            input32.maxWidth = 0.2;
-            input32.height = "30px";
-            input32.top = ""+diff+ "%";
-            input32.left = "4%";
-            input32.text = "";
-            input32.color = "white";
-            input32.background = "#e8b172";
-            input32.thickness = 2;
-            input32.isVisible = true;
-            
-            var input3 = new BABYLON.GUI.InputText();
-            input3.width = 0.2;
-            input3.maxWidth = 0.2;
-            input3.height = "30px";
-            input3.top = ""+diff+ "%";
-            input3.left = "27.5%";
-            input3.text = "";
-            input3.color = "white";
-            input3.background = "#e8b172";
-            input3.thickness = 2;
-            input3.isVisible = true;
-            diff+=5;
-            //advancedTextureJournal.addControl(input3);
+        var checkbox = new BABYLON.GUI.Checkbox();
+        checkbox.top = ""+lineSpacingInputs+ "%";
+        checkbox.left ="-9.5%";
+        checkbox.width = "20px";
+        checkbox.height = "20px";
+        checkbox.isChecked = true;
+        checkbox.color = pointsOfInterest[meshLen-1].toHexString();
 
-            //var m = pointsOfInterest[meshLen-1].clone("ASD");
-            advancedTextureJournal.addControl(input3);
-            advancedTextureJournal.addControl(input32);
-            advancedTextureJournal.addControl(checkbox);
+        var input32 = new BABYLON.GUI.InputText();
+        input32.width = 0.2;
+        input32.maxWidth = 0.2;
+        input32.height = "30px";
+        input32.top = ""+lineSpacingInputs+ "%";
+        input32.left = "4%";
+        input32.text = "";
+        input32.color = "white";
+        input32.background = "#e8b172";
+        input32.thickness = 2;
+        input32.isVisible = true;
+        
+        var input3 = new BABYLON.GUI.InputText();
+        input3.width = 0.2;
+        input3.maxWidth = 0.2;
+        input3.height = "30px";
+        input3.top = ""+lineSpacingInputs+ "%";
+        input3.left = "27.5%";
+        input3.text = "";
+        input3.color = "white";
+        input3.background = "#e8b172";
+        input3.thickness = 2;
+        input3.isVisible = true;
+        lineSpacingInputs+=5;
+
+        advancedTextureJournal.addControl(input3);
+        advancedTextureJournal.addControl(input32);
+        advancedTextureJournal.addControl(checkbox);
         
     });
 
     
-    var layer = new BABYLON.Layer('','https://raw.githubusercontent.com/fossilvr/fossilvr.github.io/master/assets/ui/Group137.png', scene, true);
+    var layer = new BABYLON.Layer('','assets/ui/Group137.png', scene, true);
     var advancedTextureJournal = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UIJ");
 
     
     scene.onBeforeRenderObservable.add(function () {
-    //console.log(pointsOfInterest.length);
     
     });
 
@@ -1613,9 +1404,12 @@ const createSceneJournal = function() {
     button1.left = "12%";
     button1.top = "20%";
     button1.thickness = 0; 
+
+    //Goes back to the previous scene
     button1.onPointerUpObservable.add(function(){
         journalVisible = false;
     });
+
     advancedTextureJournal.addControl(button1);
     advancedTextureJournal.addControl(textHint);
     advancedTextureJournal.addControl(text1);
@@ -1634,7 +1428,7 @@ const sceneJournal = createSceneJournal();
 
             else if(playGame && !journalVisible){
                 
-                //scene1.dispose();
+                scene1.dispose();
                 scene.render();   
             }
  
@@ -1643,7 +1437,6 @@ const sceneJournal = createSceneJournal();
                 scene1.render();
 
             }
-            //scene.render();
             
         });
 
