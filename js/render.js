@@ -26,10 +26,14 @@ const createScene =  () => {
     var cancelled = false;
     var showHint = false;
     muteScene1 = muteScene0;
+    var pickedFossil1 = false;
+    var pickedFossil2 = false;
+    var pickedFossil3 = false;
     globalVolumeScene1 = BABYLON.Engine.audioEngine.getGlobalVolume(0);
 
     //-----------SCENE INITIALIZATIONS------------------------
     const scene = new BABYLON.Scene(engine);
+    
     scene.enablePhysics();
     scene.ambientColor = new BABYLON.Color3(1,1,1);
     scene.gravity = new BABYLON.Vector3(0, -.75, 0); 
@@ -107,6 +111,8 @@ const createScene =  () => {
     ground.receiveShadows = true;
     ground.layerMask = 1;
 
+    
+    //vrHelper.enableInteractions();
     //-----------------WALLS----------------------------
     //To prevent map fall off
 
@@ -246,7 +252,7 @@ const createScene =  () => {
     hintImg.width = "50%";
     hintImg.height = "50%";
     var textHint = new BABYLON.GUI.TextBlock();
-    textHint.text = "Use W, A, S, D to move Up, Down, Left and Right. \n Point towards an item with your cursor and \npress 'E' to interact.";
+    textHint.text = "Use W, A, S, D to move Up, Down, Left and Right. \n Point towards an item with your cursor and \npress 'E' to interact. \n Press 'F' to replay Hannah's previous dialogue.";
     textHint.color = "black";
     textHint.fontSize = 20;
     textHint.top = "-10%";
@@ -324,9 +330,13 @@ const createScene =  () => {
     buttonMute.thickness = 0;
     var advancedTextureChameleonPic = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("Chameleon");
     var chameleonImg = new BABYLON.GUI.Image("but", "assets/chameleon.png");
+    var chameleonImgCircle = new BABYLON.GUI.Image("but", "assets/chameleon_spot.png");
     chameleonImg.top = "-10%"
     chameleonImg.width = "50%";
     chameleonImg.height = "50%";
+    chameleonImgCircle.top = "-10%"
+    chameleonImgCircle.width = "50%";
+    chameleonImgCircle.height = "50%";
     button4.onPointerUpObservable.add(function() {
        
         switch(dialogueCounter){
@@ -371,9 +381,10 @@ const createScene =  () => {
                     case 7: 
                     intro7.stop();
                     advancedTextureChameleonPic.removeControl(chameleonImg);
-                    advancedTextureChameleonPic.isVisible = false;
-                    advancedTextureChameleonPic.dispose();  
-                    chameleonImg.dispose();
+                    advancedTextureChameleonPic.addControl(chameleonImgCircle);
+                    //advancedTextureChameleonPic.isVisible = false;
+                    //advancedTextureChameleonPic.dispose();  
+                    //chameleonImg.dispose();
                     dispBut.textBlock.text = "I observe that the chameleon skin is green with yellow spots. Now let’s make an inference about the chameleon. An inference is when you use clues and what you know to make a guess about something."
                     intro8.play();
                     dialogueCounter++;
@@ -383,26 +394,35 @@ const createScene =  () => {
                     intro9.play();
                     dispBut.textBlock.text = "I think that the chameleon has green skin with yellow spots to help it blend in or camouflage with its surroundings. This is important, because its skin helps it to hide from animals that may try to harm it!"
                     dialogueCounter++;
-                    advancedTexture.removeControl(button5);
-                    advancedTexture.removeControl(button4);
+                    
+                    //advancedTextureChameleonPic.dispose();
+                    
+                    
+                    break;
+                    case 9:
+                        advancedTextureChameleonPic.removeControl(chameleonImgCircle);
+                        advancedTextureChameleonPic.isVisible = false;
+                        advancedTexture.removeControl(button4);
                     advancedTexture.removeControl(dispBut);
                     advancedTexture.addControl(button1);
                     advancedTexture.addControl(button2);
                     advancedTexture.addControl(button3);
+                    advancedTexture.removeControl(button5);
                     cancelled = true;
                     break;
+                        
 
         }
     });
-    if(dialogueCounter>8){
-        advancedTexture.removeControl(button5);
-    }
+
 
     button5.onPointerUpObservable.add(function(){
         console.log("In");
         dialogueCounter = 0;
         hannahWaving.setEnabled(true);
         hannahTalking.setEnabled(false);
+        advancedTextureChameleonPic.removeControl(chameleonImgCircle);
+        advancedTextureChameleonPic.removeControl(chameleonImg);
         advancedTexture.removeControl(button4);
         advancedTexture.removeControl(dispBut);
         advancedTexture.removeControl(button5);
@@ -554,7 +574,7 @@ const createScene =  () => {
             var hit = scene.pickWithRay(ray, function(mesh){
              if(mesh == pickUpR1 || mesh== pickUpR2 || mesh==pickUpR3 || mesh==pickUpR4 || mesh==pickUpR5 || mesh ==pickUpR6 || mesh==pickUpSkull || mesh ==pickUpR1a ||
                 mesh ==pickUpR2a || mesh ==pickUpR3a || mesh ==pickUpR4a || mesh ==pickUpR5a || mesh ==pickUpR6a || mesh ==pickUpR1b || mesh ==pickUpR2b || mesh ==pickUpR3b
-                || mesh ==pickUpR4b || mesh ==pickUpR5b || mesh ==pickUpR6b || mesh==pickUpSkull2 || mesh==pickUpSkull3) { 
+                || mesh ==pickUpR4b || mesh ==pickUpR5b || mesh ==pickUpR6b || mesh==pickUpSkull2 || mesh==pickUpSkull3 || mesh==hannahWaving) { 
                 
                  return true;
                 
@@ -562,25 +582,48 @@ const createScene =  () => {
              return false;
          });
             if(hit.pickedMesh){
-                if(hit.pickedMesh==pickUpSkull){ 
+                if(hit.pickedMesh==pickUpSkull){
+                    if(pickedFossil1){
+                        journalVisible = true;
+                    } 
+                    else{
                     showInfoPanel("1","1");
+                    pickedFossil1 = true;
                     pickedUp = false;
-                    } 
+                    }
+                } 
                 else if(hit.pickedMesh==pickUpSkull2){ 
+                    if(pickedFossil2){
+                        journalVisible = true;
+                    }
+                    else{
                     showInfoPanel("2","2");
+                    pickedFossil2 = true;
                     pickedUp = false;
-                    } 
+                    }
+
+                } 
                 else if(hit.pickedMesh==pickUpSkull3){ 
+                    if(pickedFossil3){
+                        journalVisible = true;
+                    }
+                    else{
                     showInfoPanel("3","3");
                     pickedUp = false;
+                    pickedFossil3 = true;
                     } 
+                }
+                else if(hit.pickedMesh == hannahWaving){
+                    console.log("Inside Hannah");
+                    cancelled = false;
+                }
                 else {
                     hit.pickedMesh.physicsImpostor.sleep();
                     currMesh = hit.pickedMesh;
                     startingPoint = currMesh.position;
                     pickedUp = true;
                 }
-
+                console.log(hit.pickedMesh.name);
                 //hl.addMesh(currMesh.subMeshes[0].getRenderingMesh(), BABYLON.Color3.Green());       
             }
         }
@@ -1062,7 +1105,8 @@ const createScene =  () => {
                 }
         }
         
-        if(dialogueCounter>8){
+        if(cancelled){
+            dialogueCounter = 0;
             advancedTexture.removeControl(button4);
             advancedTexture.removeControl(dispBut);
             hannahWaving.setEnabled(true);
@@ -1124,6 +1168,9 @@ scene.onKeyboardObservable.add((kbInfo) => {
                 case "z":
                 case "Z":
                     zPressed = true;
+                case "f":
+                case "F":
+                cancelled = false;                
                 break;
             }
         break;
@@ -1264,37 +1311,60 @@ const createSceneJournal = function() {
     //Scene variables - self explanatory
     var lineSpacingInputs = 13.4;
     var pointsOfInterest = [];
+    var pinMeshInfo = [];
     var meshLen = 0;
     var triceraSkull;
+    var observations = [];
+    var inferences = [];
+    var keys = [];
 
     //Initialize scene lights and camera
 	var scene = new BABYLON.Scene(engine);
+    //var vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false, useXR: true});
     scene.clearColor = new BABYLON.Color3(0.96, 0.76, 0.23);
-	var camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 3, new BABYLON.Vector3(0,-0.3,0), scene);
+	var camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 3, new BABYLON.Vector3(3,0,4), scene);
 	camera.attachControl(canvas, true);
+    camera.setTarget(new BABYLON.Vector3.Zero());
     var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
     camera.lowerRadiusLimit = 0.1;
     camera.wheelPrecision = 15;
     light.intensity = 0.7;
 
     //Import tricera skull model
-    BABYLON.SceneLoader.ImportMesh("", "https://raw.githubusercontent.com/fossilvr/fossilvr.github.io/master/assets/", "pal.glb",scene, function(meshes){
+    // BABYLON.SceneLoader.ImportMesh("", "https://raw.githubusercontent.com/fossilvr/fossilvr.github.io/master/assets/", "pal.glb",scene, function(meshes){
+    //     meshes.forEach(function(mesh){
+    //         if(mesh.name != '13637_Triceratops_Skull_Fossil_v1_L2') mesh.isVisible = false;
+    //         else triceraSkull = mesh;
+    //     })
+
+    //     triceraSkull.position = new BABYLON.Vector3(0,0.15,0);
+    //     tricerSkull.scaling = new BABYLON.Vector3(50,50,50);
+    //     triceraSkull.position = new BABYLON.Vector3(0,1,0);
+    //     triceraSkull.rotation = new BABYLON.Vector3(0.3,0.4,0.1);
+    //     triceraSkull.setPivotPoint(new BABYLON.Vector3(1, 0.5, 0));
+    // });
+
+    BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/tricera.glb").then((result) => {
         meshes.forEach(function(mesh){
             if(mesh.name != '13637_Triceratops_Skull_Fossil_v1_L2') mesh.isVisible = false;
             else triceraSkull = mesh;
         })
-
-        triceraSkull.position = new BABYLON.Vector3(0,0,0);
+        
+        triceraSkull.position = new BABYLON.Vector3(0,0.15,0);
         tricerSkull.scaling = new BABYLON.Vector3(50,50,50);
         triceraSkull.position = new BABYLON.Vector3(0,1,0);
-    });
+        triceraSkull.rotation = new BABYLON.Vector3(0.3,0.4,0.1);
+        triceraSkull.setPivotPoint(new BABYLON.Vector3(1, 0.5, 0));
+});
+    
 
 
     //Double click to add pins to the model
     window.addEventListener('dblclick', function() {       
 
         var pickResult = scene.pick(scene.pointerX, scene.pointerY);        
-
+        //Put null check maybe?
+        if(pickResult.pickedMesh.name=="13637_Triceratops_Skull_Fossil_v1_L2"){
         var mat = new BABYLON.StandardMaterial('mat1', this.scene);
         mat.diffuseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
 
@@ -1329,7 +1399,8 @@ const createSceneJournal = function() {
         var tmpVec = BABYLON.Vector3.RotationFromAxis(axis3.negate(), axis1, axis2);
         var quat = BABYLON.Quaternion.RotationYawPitchRoll(tmpVec.y, tmpVec.x, tmpVec.z);
         mesh.rotationQuaternion = quat;
-
+        pinMeshInfo.push(mesh);
+        console.log(pinMeshInfo);
         //Stores pin count
         meshLen++;
 
@@ -1366,33 +1437,115 @@ const createSceneJournal = function() {
         input3.isVisible = true;
         lineSpacingInputs+=5;
 
+        observations.push(input32);
+        inferences.push(input3);
+        keys.push(checkbox);
+
         advancedTextureJournal.addControl(input3);
         advancedTextureJournal.addControl(input32);
         advancedTextureJournal.addControl(checkbox);
+        }
         
+    });
+
+    scene.onPointerObservable.add((pointerInfo) => {      		
+        
+
+        switch (pointerInfo.type) {
+			case BABYLON.PointerEventTypes.POINTERDOWN:
+                //pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh != ground
+				if(pointerInfo.event.button == 2) {
+                    var pickResult = scene.pick(scene.pointerX, scene.pointerY); 
+                    console.log(pickResult.pickedMesh.uniqueId);
+                    for(let i=0;i<pinMeshInfo.length;i++){
+                        console.log(pinMeshInfo[i].uniqueId + " " + pickResult.pickedMesh.uniqueId);
+                        if(pinMeshInfo[i].uniqueId==pickResult.pickedMesh.uniqueId){
+                            for(let i =0;i<pointsOfInterest.length;i++){
+                                console.log("First loop run:" + i);
+                                advancedTextureJournal.removeControl(observations[i]);
+                                advancedTextureJournal.removeControl(inferences[i]);
+                                advancedTextureJournal.removeControl(keys[i]);
+                            }
+                            pinMeshInfo[i].dispose();
+                            lineSpacingInputs = 13.4
+                            pinMeshInfo.splice(i,1);
+                            //console.log(observations.length);
+                            pointsOfInterest.splice(i,1);
+                            keys.splice(i,1);
+                            observations.splice(i,1);
+                            inferences.splice(i,1);
+                            meshLen=0;
+                            console.log(pointsOfInterest.length);
+                            observations = [];
+                            inferences = [];
+                            keys = [];
+                            for(let i =0;i<pointsOfInterest.length;i++){
+                                console.log("Second Loop run:" + i);
+                                var checkbox = new BABYLON.GUI.Checkbox();
+                                checkbox.top = ""+lineSpacingInputs+ "%";
+                                checkbox.left ="-9.5%";
+                                checkbox.width = "20px";
+                                checkbox.height = "20px";
+                                checkbox.isChecked = true;
+                                checkbox.color = pointsOfInterest[i].toHexString();
+
+                                var input32 = new BABYLON.GUI.InputText();
+                                input32.width = 0.2;
+                                input32.maxWidth = 0.2;
+                                input32.height = "30px";
+                                input32.top = ""+lineSpacingInputs+ "%";
+                                input32.left = "4%";
+                                input32.text = "";
+                                input32.color = "white";
+                                input32.background = "#e8b172";
+                                input32.thickness = 2;
+                                input32.isVisible = true;
+                                
+                                var input3 = new BABYLON.GUI.InputText();
+                                input3.width = 0.2;
+                                input3.maxWidth = 0.2;
+                                input3.height = "30px";
+                                input3.top = ""+lineSpacingInputs+ "%";
+                                input3.left = "27.5%";
+                                input3.text = "";
+                                input3.color = "white";
+                                input3.background = "#e8b172";
+                                input3.thickness = 2;
+                                input3.isVisible = true;
+                                lineSpacingInputs+=5;
+                                observations.push(input32);
+                                inferences.push(input3);
+                                keys.push(checkbox);
+                                meshLen++;
+
+                                advancedTextureJournal.addControl(input3);
+                                advancedTextureJournal.addControl(input32);
+                                advancedTextureJournal.addControl(checkbox);
+                            }
+                            
+                        }
+                    }
+                   
+                }
+				break;
+        }
     });
 
     
     var layer = new BABYLON.Layer('','assets/ui/Group137.png', scene, true);
     var advancedTextureJournal = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UIJ");
 
-    
-    scene.onBeforeRenderObservable.add(function () {
-    
-    });
-
-
     var textHint = new BABYLON.GUI.TextBlock();
     textHint.text = "Double click on a point of interest to add a pin. \n Drag using left mouse button to rotate. \n Scroll to zoom in and out.";
     textHint.color = "black";
-    textHint.fontSize = 20;
+    textHint.fontSize = "3%";
     textHint.top = "-26%";
     textHint.left = "25%";
     
     var text1 = new BABYLON.GUI.TextBlock();
     text1.text = "Fossil ID:\tFossil " + 3 + "\n\nLocation: \tAshara Desert, Mountain " + 3 + "\n\nFound by: \t Jessica Roberts";
     text1.color = "black";
-    text1.fontSize = 8;
+    text1.fontSize = "1.35%";
     text1.top = "-9%";
     text1.left = "30%";
 
@@ -1408,6 +1561,579 @@ const createSceneJournal = function() {
     //Goes back to the previous scene
     button1.onPointerUpObservable.add(function(){
         journalVisible = false;
+        results =[];
+        var seen = [];
+        for(let i = 0; i < pointsOfInterest.length; i++) {
+            results.push({
+               observations: observations[i],
+               inferences: inferences[i],
+               keys: keys[i]
+            });
+         }
+        //  var jsonData = JSON.stringify(observations, function(key, val) {
+        //     if (val != null && typeof val == "object") {
+        //          if (seen.indexOf(val) >= 0) {
+        //              return;
+        //          }
+        //          seen.push(val);
+        //      }
+        //      return val;
+        //  });
+        //  var a = document.createElement('a');
+        //  a.setAttribute('href', 'data:text/plain;charset=utf-8,'+encodeURIComponent(jsonData));
+        //  a.setAttribute('download', "download.txt");
+        //  a.click()
+        //SAVE JSON ON FILE^
+    });
+
+    advancedTextureJournal.addControl(button1);
+    advancedTextureJournal.addControl(textHint);
+    advancedTextureJournal.addControl(text1);
+	return scene;
+};
+
+const createSceneJournal1 = function() {
+    
+    //Scene variables - self explanatory
+    var lineSpacingInputs = 13.4;
+    var pointsOfInterest = [];
+    var pinMeshInfo = [];
+    var meshLen = 0;
+    var triceraSkull;
+    var observations = [];
+    var inferences = [];
+    var keys = [];
+
+    //Initialize scene lights and camera
+	var scene = new BABYLON.Scene(engine);
+    //var vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false, useXR: true});
+    scene.clearColor = new BABYLON.Color3(0.96, 0.76, 0.23);
+	var camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 3, new BABYLON.Vector3(3,0,5), scene);
+	camera.attachControl(canvas, true);
+    camera.setTarget(new BABYLON.Vector3.Zero());
+    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    camera.lowerRadiusLimit = 0.1;
+    camera.wheelPrecision = 15;
+    light.intensity = 0.7;
+
+    BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/trex.glb").then((result) => {
+        triceraSkull = result.meshes[0];
+        triceraSkull.position = new BABYLON.Vector3(0,0,0);
+});
+    
+
+
+    //Double click to add pins to the model
+    window.addEventListener('dblclick', function() {       
+
+        var pickResult = scene.pick(scene.pointerX, scene.pointerY);        
+        //Put null check maybe?
+        if(pickResult.pickedMesh.name=="13638_Tyrannosaurus_Rex_Skull_Fossil_v1_L1"){
+        var mat = new BABYLON.StandardMaterial('mat1', this.scene);
+        mat.diffuseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
+
+        var sphere = BABYLON.MeshBuilder.CreateSphere(
+        'sphere1',
+        { diameter: 2, segments: 16 },
+        scene
+        );
+        sphere.material = mat;
+        sphere.position.y = 3;
+
+        var cube = BABYLON.MeshBuilder.CreateBox(
+        'cube',
+        { size: 0.5, height: 3 },
+        scene
+        );
+        cube.position = new BABYLON.Vector3(0, 1.5, 0);
+        cube.material = mat;
+
+        var mesh = BABYLON.Mesh.MergeMeshes([sphere, cube]);
+        mesh.scaling = new BABYLON.Vector3(0.05,0.05,0.05);       
+        pointsOfInterest.push(mat.diffuseColor);
+        mesh.position = pickResult.pickedPoint;
+                        
+        var axis1 = pickResult.getNormal();							        		
+        var axis2 = BABYLON.Vector3.Up();
+        var axis3 = BABYLON.Vector3.Up();
+        var start = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, 0);				
+
+        BABYLON.Vector3.CrossToRef(start, axis1, axis2);
+        BABYLON.Vector3.CrossToRef(axis2, axis1, axis3);
+        var tmpVec = BABYLON.Vector3.RotationFromAxis(axis3.negate(), axis1, axis2);
+        var quat = BABYLON.Quaternion.RotationYawPitchRoll(tmpVec.y, tmpVec.x, tmpVec.z);
+        mesh.rotationQuaternion = quat;
+        mesh.name = "asd";
+        //mesh.isEnabled = true;
+        mesh.isVisible = true;
+        mesh.showBoundingBox = true;
+        pinMeshInfo.push(mesh);
+        console.log(pinMeshInfo);
+        //Stores pin count
+        meshLen++;
+
+        // var checkbox = new BABYLON.GUI.Checkbox();
+        // checkbox.top = ""+lineSpacingInputs+ "%";
+        // checkbox.left ="-9.5%";
+        // checkbox.width = "20px";
+        // checkbox.height = "20px";
+        // checkbox.isChecked = true;
+        // checkbox.color = pointsOfInterest[meshLen-1].toHexString();
+
+        // var input32 = new BABYLON.GUI.InputText();
+        // input32.width = 0.2;
+        // input32.maxWidth = 0.2;
+        // input32.height = "30px";
+        // input32.top = ""+lineSpacingInputs+ "%";
+        // input32.left = "4%";
+        // input32.text = "";
+        // input32.color = "white";
+        // input32.background = "#e8b172";
+        // input32.thickness = 2;
+        // input32.isVisible = true;
+        
+        // var input3 = new BABYLON.GUI.InputText();
+        // input3.width = 0.2;
+        // input3.maxWidth = 0.2;
+        // input3.height = "30px";
+        // input3.top = ""+lineSpacingInputs+ "%";
+        // input3.left = "27.5%";
+        // input3.text = "";
+        // input3.color = "white";
+        // input3.background = "#e8b172";
+        // input3.thickness = 2;
+        // input3.isVisible = true;
+        // lineSpacingInputs+=5;
+
+        // observations.push(input32);
+        // inferences.push(input3);
+        // keys.push(checkbox);
+
+        // advancedTextureJournal.addControl(input3);
+        // advancedTextureJournal.addControl(input32);
+        // advancedTextureJournal.addControl(checkbox);
+        }
+        
+    });
+
+    // scene.onPointerObservable.add((pointerInfo) => {      		
+        
+
+    //     switch (pointerInfo.type) {
+	// 		case BABYLON.PointerEventTypes.POINTERDOWN:
+    //             //pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh != ground
+	// 			if(pointerInfo.event.button == 2) {
+    //                 var pickResult = scene.pick(scene.pointerX, scene.pointerY); 
+    //                 console.log(pickResult.pickedMesh.uniqueId);
+    //                 for(let i=0;i<pinMeshInfo.length;i++){
+    //                     console.log(pinMeshInfo[i].uniqueId + " " + pickResult.pickedMesh.uniqueId);
+    //                     if(pinMeshInfo[i].uniqueId==pickResult.pickedMesh.uniqueId){
+    //                         for(let i =0;i<pointsOfInterest.length;i++){
+    //                             console.log("First loop run:" + i);
+    //                             advancedTextureJournal.removeControl(observations[i]);
+    //                             advancedTextureJournal.removeControl(inferences[i]);
+    //                             advancedTextureJournal.removeControl(keys[i]);
+    //                         }
+    //                         pinMeshInfo[i].dispose();
+    //                         lineSpacingInputs = 13.4
+    //                         pinMeshInfo.splice(i,1);
+    //                         //console.log(observations.length);
+    //                         pointsOfInterest.splice(i,1);
+    //                         keys.splice(i,1);
+    //                         observations.splice(i,1);
+    //                         inferences.splice(i,1);
+    //                         meshLen=0;
+    //                         console.log(pointsOfInterest.length);
+    //                         observations = [];
+    //                         inferences = [];
+    //                         keys = [];
+    //                         for(let i =0;i<pointsOfInterest.length;i++){
+    //                             console.log("Second Loop run:" + i);
+    //                             var checkbox = new BABYLON.GUI.Checkbox();
+    //                             checkbox.top = ""+lineSpacingInputs+ "%";
+    //                             checkbox.left ="-9.5%";
+    //                             checkbox.width = "20px";
+    //                             checkbox.height = "20px";
+    //                             checkbox.isChecked = true;
+    //                             checkbox.color = pointsOfInterest[i].toHexString();
+
+    //                             var input32 = new BABYLON.GUI.InputText();
+    //                             input32.width = 0.2;
+    //                             input32.maxWidth = 0.2;
+    //                             input32.height = "30px";
+    //                             input32.top = ""+lineSpacingInputs+ "%";
+    //                             input32.left = "4%";
+    //                             input32.text = "";
+    //                             input32.color = "white";
+    //                             input32.background = "#e8b172";
+    //                             input32.thickness = 2;
+    //                             input32.isVisible = true;
+                                
+    //                             var input3 = new BABYLON.GUI.InputText();
+    //                             input3.width = 0.2;
+    //                             input3.maxWidth = 0.2;
+    //                             input3.height = "30px";
+    //                             input3.top = ""+lineSpacingInputs+ "%";
+    //                             input3.left = "27.5%";
+    //                             input3.text = "";
+    //                             input3.color = "white";
+    //                             input3.background = "#e8b172";
+    //                             input3.thickness = 2;
+    //                             input3.isVisible = true;
+    //                             lineSpacingInputs+=5;
+    //                             observations.push(input32);
+    //                             inferences.push(input3);
+    //                             keys.push(checkbox);
+    //                             meshLen++;
+
+    //                             advancedTextureJournal.addControl(input3);
+    //                             advancedTextureJournal.addControl(input32);
+    //                             advancedTextureJournal.addControl(checkbox);
+    //                         }
+                            
+    //                     }
+    //                 }
+                   
+    //             }
+	// 			break;
+    //     }
+    //});
+
+    
+    // var layer = new BABYLON.Layer('','assets/ui/Group137.png', scene, true);
+    // var advancedTextureJournal = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UIJ");
+
+    // var textHint = new BABYLON.GUI.TextBlock();
+    // textHint.text = "Double click on a point of interest to add a pin. \n Drag using left mouse button to rotate. \n Scroll to zoom in and out.";
+    // textHint.color = "black";
+    // textHint.fontSize = "3%";
+    // textHint.top = "-26%";
+    // textHint.left = "25%";
+    
+    // var text1 = new BABYLON.GUI.TextBlock();
+    // text1.text = "Fossil ID:\tFossil " + 3 + "\n\nLocation: \tAshara Desert, Mountain " + 3 + "\n\nFound by: \t Jessica Roberts";
+    // text1.color = "black";
+    // text1.fontSize = "1.35%";
+    // text1.top = "-9%";
+    // text1.left = "30%";
+
+    // var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but","", "assets/ui/DoneButton.png");
+    // button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    // button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    // button1.width = 0.15;
+    // button1.height = 0.08;
+    // button1.left = "12%";
+    // button1.top = "20%";
+    // button1.thickness = 0; 
+
+    // //Goes back to the previous scene
+    // button1.onPointerUpObservable.add(function(){
+    //     journalVisible = false;
+    //     results =[];
+    //     var seen = [];
+    //     for(let i = 0; i < pointsOfInterest.length; i++) {
+    //         results.push({
+    //            observations: observations[i],
+    //            inferences: inferences[i],
+    //            keys: keys[i]
+    //         });
+    //      }
+    //     //  var jsonData = JSON.stringify(observations, function(key, val) {
+    //     //     if (val != null && typeof val == "object") {
+    //     //          if (seen.indexOf(val) >= 0) {
+    //     //              return;
+    //     //          }
+    //     //          seen.push(val);
+    //     //      }
+    //     //      return val;
+    //     //  });
+    //     //  var a = document.createElement('a');
+    //     //  a.setAttribute('href', 'data:text/plain;charset=utf-8,'+encodeURIComponent(jsonData));
+    //     //  a.setAttribute('download', "download.txt");
+    //     //  a.click()
+    //     //SAVE JSON ON FILE^
+    // });
+
+    // advancedTextureJournal.addControl(button1);
+    // advancedTextureJournal.addControl(textHint);
+    // advancedTextureJournal.addControl(text1);
+	return scene;
+};
+
+const createSceneJournal2 = function() {
+    
+    //Scene variables - self explanatory
+    var lineSpacingInputs = 13.4;
+    var pointsOfInterest = [];
+    var pinMeshInfo = [];
+    var meshLen = 0;
+    var triceraSkull;
+    var observations = [];
+    var inferences = [];
+    var keys = [];
+
+    //Initialize scene lights and camera
+	var scene = new BABYLON.Scene(engine);
+    //var vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false, useXR: true});
+    scene.clearColor = new BABYLON.Color3(0.96, 0.76, 0.23);
+	var camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 3, new BABYLON.Vector3(3,0,4), scene);
+	camera.attachControl(canvas, true);
+    camera.setTarget(new BABYLON.Vector3.Zero());
+    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    camera.lowerRadiusLimit = 0.1;
+    camera.wheelPrecision = 15;
+    light.intensity = 0.7;
+
+    //Import tricera skull model
+    // BABYLON.SceneLoader.ImportMesh("", "https://raw.githubusercontent.com/fossilvr/fossilvr.github.io/master/assets/", "pal.glb",scene, function(meshes){
+    //     meshes.forEach(function(mesh){
+    //         if(mesh.name != '13637_Triceratops_Skull_Fossil_v1_L2') mesh.isVisible = false;
+    //         else triceraSkull = mesh;
+    //     })
+
+    //     triceraSkull.position = new BABYLON.Vector3(0,0.15,0);
+    //     tricerSkull.scaling = new BABYLON.Vector3(50,50,50);
+    //     triceraSkull.position = new BABYLON.Vector3(0,1,0);
+    //     triceraSkull.rotation = new BABYLON.Vector3(0.3,0.4,0.1);
+    //     triceraSkull.setPivotPoint(new BABYLON.Vector3(1, 0.5, 0));
+    // });
+
+    BABYLON.SceneLoader.ImportMeshAsync("", "", "assets/ammonite.glb").then((result) => {
+        triceraSkull = result.meshes[0];
+        //triceraSkull.position = new BABYLON.Vector3(0,0.15,0);
+        //triceraSkull.scaling = new BABYLON.Vector3(50,50,50);
+        triceraSkull.position = new BABYLON.Vector3(0,0.5,0);
+        //triceraSkull.rotation = new BABYLON.Vector3(0.3,0.4,0.1);
+        //triceraSkull.setPivotPoint(new BABYLON.Vector3(1, 0.5, 0));
+});
+    
+
+
+    //Double click to add pins to the model
+    window.addEventListener('dblclick', function() {       
+
+        var pickResult = scene.pick(scene.pointerX, scene.pointerY);        
+        //Put null check maybe?
+        if(pickResult.pickedMesh.name=="13634_AmmoniteFossil_v1_l2"){
+        var mat = new BABYLON.StandardMaterial('mat1', this.scene);
+        mat.diffuseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
+
+        var sphere = BABYLON.MeshBuilder.CreateSphere(
+        'sphere1',
+        { diameter: 2, segments: 16 },
+        scene
+        );
+        sphere.material = mat;
+        sphere.position.y = 3;
+
+        var cube = BABYLON.MeshBuilder.CreateBox(
+        'cube',
+        { size: 0.5, height: 3 },
+        scene
+        );
+        cube.position = new BABYLON.Vector3(0, 1.5, 0);
+        cube.material = mat;
+
+        var mesh = BABYLON.Mesh.MergeMeshes([sphere, cube]);
+        mesh.scaling = new BABYLON.Vector3(0.05,0.05,0.05);       
+        pointsOfInterest.push(mat.diffuseColor);
+        mesh.position = pickResult.pickedPoint;
+                        
+        var axis1 = pickResult.getNormal();							        		
+        var axis2 = BABYLON.Vector3.Up();
+        var axis3 = BABYLON.Vector3.Up();
+        var start = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, 0);				
+
+        BABYLON.Vector3.CrossToRef(start, axis1, axis2);
+        BABYLON.Vector3.CrossToRef(axis2, axis1, axis3);
+        var tmpVec = BABYLON.Vector3.RotationFromAxis(axis3.negate(), axis1, axis2);
+        var quat = BABYLON.Quaternion.RotationYawPitchRoll(tmpVec.y, tmpVec.x, tmpVec.z);
+        mesh.rotationQuaternion = quat;
+        pinMeshInfo.push(mesh);
+        console.log(pinMeshInfo);
+        //Stores pin count
+        meshLen++;
+
+        var checkbox = new BABYLON.GUI.Checkbox();
+        checkbox.top = ""+lineSpacingInputs+ "%";
+        checkbox.left ="-9.5%";
+        checkbox.width = "20px";
+        checkbox.height = "20px";
+        checkbox.isChecked = true;
+        checkbox.color = pointsOfInterest[meshLen-1].toHexString();
+
+        var input32 = new BABYLON.GUI.InputText();
+        input32.width = 0.2;
+        input32.maxWidth = 0.2;
+        input32.height = "30px";
+        input32.top = ""+lineSpacingInputs+ "%";
+        input32.left = "4%";
+        input32.text = "";
+        input32.color = "white";
+        input32.background = "#e8b172";
+        input32.thickness = 2;
+        input32.isVisible = true;
+        
+        var input3 = new BABYLON.GUI.InputText();
+        input3.width = 0.2;
+        input3.maxWidth = 0.2;
+        input3.height = "30px";
+        input3.top = ""+lineSpacingInputs+ "%";
+        input3.left = "27.5%";
+        input3.text = "";
+        input3.color = "white";
+        input3.background = "#e8b172";
+        input3.thickness = 2;
+        input3.isVisible = true;
+        lineSpacingInputs+=5;
+
+        observations.push(input32);
+        inferences.push(input3);
+        keys.push(checkbox);
+
+        advancedTextureJournal.addControl(input3);
+        advancedTextureJournal.addControl(input32);
+        advancedTextureJournal.addControl(checkbox);
+        }
+        
+    });
+
+    scene.onPointerObservable.add((pointerInfo) => {      		
+        
+
+        switch (pointerInfo.type) {
+			case BABYLON.PointerEventTypes.POINTERDOWN:
+                //pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh != ground
+				if(pointerInfo.event.button == 2) {
+                    var pickResult = scene.pick(scene.pointerX, scene.pointerY); 
+                    console.log(pickResult.pickedMesh.uniqueId);
+                    for(let i=0;i<pinMeshInfo.length;i++){
+                        console.log(pinMeshInfo[i].uniqueId + " " + pickResult.pickedMesh.uniqueId);
+                        if(pinMeshInfo[i].uniqueId==pickResult.pickedMesh.uniqueId){
+                            for(let i =0;i<pointsOfInterest.length;i++){
+                                console.log("First loop run:" + i);
+                                advancedTextureJournal.removeControl(observations[i]);
+                                advancedTextureJournal.removeControl(inferences[i]);
+                                advancedTextureJournal.removeControl(keys[i]);
+                            }
+                            pinMeshInfo[i].dispose();
+                            lineSpacingInputs = 13.4
+                            pinMeshInfo.splice(i,1);
+                            //console.log(observations.length);
+                            pointsOfInterest.splice(i,1);
+                            keys.splice(i,1);
+                            observations.splice(i,1);
+                            inferences.splice(i,1);
+                            meshLen=0;
+                            console.log(pointsOfInterest.length);
+                            observations = [];
+                            inferences = [];
+                            keys = [];
+                            for(let i =0;i<pointsOfInterest.length;i++){
+                                console.log("Second Loop run:" + i);
+                                var checkbox = new BABYLON.GUI.Checkbox();
+                                checkbox.top = ""+lineSpacingInputs+ "%";
+                                checkbox.left ="-9.5%";
+                                checkbox.width = "20px";
+                                checkbox.height = "20px";
+                                checkbox.isChecked = true;
+                                checkbox.color = pointsOfInterest[i].toHexString();
+
+                                var input32 = new BABYLON.GUI.InputText();
+                                input32.width = 0.2;
+                                input32.maxWidth = 0.2;
+                                input32.height = "30px";
+                                input32.top = ""+lineSpacingInputs+ "%";
+                                input32.left = "4%";
+                                input32.text = "";
+                                input32.color = "white";
+                                input32.background = "#e8b172";
+                                input32.thickness = 2;
+                                input32.isVisible = true;
+                                
+                                var input3 = new BABYLON.GUI.InputText();
+                                input3.width = 0.2;
+                                input3.maxWidth = 0.2;
+                                input3.height = "30px";
+                                input3.top = ""+lineSpacingInputs+ "%";
+                                input3.left = "27.5%";
+                                input3.text = "";
+                                input3.color = "white";
+                                input3.background = "#e8b172";
+                                input3.thickness = 2;
+                                input3.isVisible = true;
+                                lineSpacingInputs+=5;
+                                observations.push(input32);
+                                inferences.push(input3);
+                                keys.push(checkbox);
+                                meshLen++;
+
+                                advancedTextureJournal.addControl(input3);
+                                advancedTextureJournal.addControl(input32);
+                                advancedTextureJournal.addControl(checkbox);
+                            }
+                            
+                        }
+                    }
+                   
+                }
+				break;
+        }
+    });
+
+    
+    var layer = new BABYLON.Layer('','assets/ui/Group137.png', scene, true);
+    var advancedTextureJournal = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UIJ");
+
+    var textHint = new BABYLON.GUI.TextBlock();
+    textHint.text = "Double click on a point of interest to add a pin. \n Drag using left mouse button to rotate. \n Scroll to zoom in and out.";
+    textHint.color = "black";
+    textHint.fontSize = "3%";
+    textHint.top = "-26%";
+    textHint.left = "25%";
+    
+    var text1 = new BABYLON.GUI.TextBlock();
+    text1.text = "Fossil ID:\tFossil " + 3 + "\n\nLocation: \tAshara Desert, Mountain " + 3 + "\n\nFound by: \t Jessica Roberts";
+    text1.color = "black";
+    text1.fontSize = "1.35%";
+    text1.top = "-9%";
+    text1.left = "30%";
+
+    var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("but","", "assets/ui/DoneButton.png");
+    button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    button1.width = 0.15;
+    button1.height = 0.08;
+    button1.left = "12%";
+    button1.top = "20%";
+    button1.thickness = 0; 
+
+    //Goes back to the previous scene
+    button1.onPointerUpObservable.add(function(){
+        journalVisible = false;
+        results =[];
+        var seen = [];
+        for(let i = 0; i < pointsOfInterest.length; i++) {
+            results.push({
+               observations: observations[i],
+               inferences: inferences[i],
+               keys: keys[i]
+            });
+         }
+        //  var jsonData = JSON.stringify(observations, function(key, val) {
+        //     if (val != null && typeof val == "object") {
+        //          if (seen.indexOf(val) >= 0) {
+        //              return;
+        //          }
+        //          seen.push(val);
+        //      }
+        //      return val;
+        //  });
+        //  var a = document.createElement('a');
+        //  a.setAttribute('href', 'data:text/plain;charset=utf-8,'+encodeURIComponent(jsonData));
+        //  a.setAttribute('download', "download.txt");
+        //  a.click()
+        //SAVE JSON ON FILE^
     });
 
     advancedTextureJournal.addControl(button1);
@@ -1419,25 +2145,27 @@ const createSceneJournal = function() {
 const scene = createScene(); 
 const scene1 = createScene1();
 const sceneJournal = createSceneJournal();
+const sceneJournal1 = createSceneJournal1();
+const sceneJournal2 = createSceneJournal2();
     
         engine.runRenderLoop(function () {
-            if(playGame && journalVisible){
-                //scene.dispose();
-                sceneJournal.render();
-            }
+            // if(playGame && journalVisible){
+            //     //scene.dispose();
+            //     sceneJournal.render();
+            // }
 
-            else if(playGame && !journalVisible){
+            // else if(playGame && !journalVisible){
                 
-                scene1.dispose();
-                scene.render();   
-            }
+            //     scene1.dispose();
+            //     scene.render();   
+            // }
  
-            else{
+            // else{
                 
-                scene1.render();
+            //     scene1.render();
 
-            }
-            
+            // }
+            sceneJournal1.render();
         });
 
     
