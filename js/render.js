@@ -1240,7 +1240,7 @@ const createScene1 = () => {
     //Add plane to use as the background
     const plane = BABYLON.MeshBuilder.CreatePlane("plane", {height:10, width: 20},scene1);
     var material = new BABYLON.StandardMaterial("texture1", scene1);
-    material.diffuseTexture = new BABYLON.Texture("assets/BackgroundStart.png ", scene1);
+    material.diffuseTexture = new BABYLON.Texture("assets/Background_Start.png ", scene1);
     material.diffuseTexture.uScale = 1.0;
     material.diffuseTexture.vScale = 1.0;
     plane.material = material;
@@ -1249,8 +1249,21 @@ const createScene1 = () => {
     //Add button
     var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("StartScreenUI");
 
+
+    //Image
+    var fossilVr = new BABYLON.GUI.Image("but", "assets/ui/logo.svg");
+    fossilVr.top = "-25%"
+    fossilVr.width = "25%";
+    fossilVr.height = "25%";
+
+    var tagLine = new BABYLON.GUI.Image("but", "assets/ui/tagline.svg");
+    tagLine.top = "-10%"
+    tagLine.width = "25%";
+    tagLine.height = "25%";
+
+
     //Start button
-    var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("StartButton","", "assets/ui/StartButton.png");
+    var button1 = BABYLON.GUI.Button.CreateImageWithCenterTextButton("StartButton","", "assets/ui/StartButtonNew.svg");
     button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
     button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
     button1.width = 0.12;
@@ -1282,7 +1295,8 @@ const createScene1 = () => {
     //Add buttons to texture
     advancedTexture.addControl(button1); 
     advancedTexture.addControl(buttonMute1);
-
+    advancedTexture.addControl(fossilVr);
+    advancedTexture.addControl(tagLine);
     //Start button observable
     button1.onPointerUpObservable.add(function() {
         playGame = true;
