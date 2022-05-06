@@ -1360,39 +1360,47 @@ const createSceneJournal = function() {
                 mat.diffuseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
 
                 var sphere = BABYLON.MeshBuilder.CreateSphere(
-                'sphere1',
-                { diameter: 2, segments: 16 },
-                scene
-                );
-                sphere.material = mat;
-                sphere.position.y = 3;
-
-                var cube = BABYLON.MeshBuilder.CreateBox(
-                'cube',
-                { size: 0.5, height: 3 },
-                scene
-                );
-                cube.position = new BABYLON.Vector3(0, 1.5, 0);
-                cube.material = mat;
-
-                var mesh = BABYLON.Mesh.MergeMeshes([sphere, cube]);
-                mesh.scaling = new BABYLON.Vector3(0.05,0.05,0.05);       
-                pointsOfInterest.push(mat.diffuseColor);
-                mesh.position = pickResult.pickedPoint;
-                                
-                var axis1 = pickResult.getNormal();							        		
-                var axis2 = BABYLON.Vector3.Up();
-                var axis3 = BABYLON.Vector3.Up();
-                var start = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, 0);				
-
-                BABYLON.Vector3.CrossToRef(start, axis1, axis2);
-                BABYLON.Vector3.CrossToRef(axis2, axis1, axis3);
-                var tmpVec = BABYLON.Vector3.RotationFromAxis(axis3.negate(), axis1, axis2);
-                var quat = BABYLON.Quaternion.RotationYawPitchRoll(tmpVec.y, tmpVec.x, tmpVec.z);
-                if (pickResult.pickedMesh.rotationQuaternion)
-                            mesh.rotationQuaternion = pickResult.pickedMesh.rotationQuaternion.multiply(quat);
-                        else
-                            mesh.rotationQuaternion = quat;
+                    'sphere1',
+                    { diameter: 2, segments: 16 },
+                    scene
+                    );
+                    sphere.material = mat;
+                    sphere.position.y = 3;
+            
+                    var cube = BABYLON.MeshBuilder.CreateBox(
+                    'cube',
+                    { size: 0.5, height: 3 },
+                    scene
+                    );
+                    cube.position = new BABYLON.Vector3(0, 1.5, 0);
+                    cube.material = mat;
+            
+                    var mesh = BABYLON.Mesh.MergeMeshes([sphere, cube]);
+            
+                    mesh.position = pickResult.pickedPoint;
+                    mesh.scaling = new BABYLON.Vector3(0.05,0.05,0.05);
+                    // !!!!!!!!!!!!!!!!!!!!!
+                    // ROTATION MUST BE HERE
+                    // !!!!!!!!!!!!!!!!!!!!!
+                                    
+                    var axis1 = pickResult.getNormal();							        		
+                    var axis2 = BABYLON.Vector3.Up();
+                    var axis3 = BABYLON.Vector3.Up();
+                    var start = camera.position;	
+            
+                    BABYLON.Vector3.CrossToRef(start, axis1, axis2);
+                    BABYLON.Vector3.CrossToRef(axis2, axis1, axis3);
+                    var tmpVec = BABYLON.Vector3.RotationFromAxis(axis3.negate(), axis1, axis3);
+                    var quat = BABYLON.Quaternion.RotationYawPitchRoll(tmpVec.z, tmpVec.x, tmpVec.y);
+                    //var quat = BABYLON.Quaternion.RotationYawPitchRoll(tmpVec.y, tmpVec.x, tmpVec.z);
+                    if (pickResult.pickedMesh.rotationQuaternion)
+                        mesh.rotationQuaternion = pickResult.pickedMesh.rotationQuaternion.multiply(quat);
+                    else
+                        mesh.rotationQuaternion = quat;
+                // if (pickResult.pickedMesh.rotationQuaternion)
+                //             mesh.rotationQuaternion = pickResult.pickedMesh.rotationQuaternion.multiply(quat);
+                //         else
+                //             mesh.rotationQuaternion = quat;
                 //mesh.rotationQuaternion = quat;
                 pinMeshInfo.push(mesh);
                 console.log(pinMeshInfo);
