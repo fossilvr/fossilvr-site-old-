@@ -1100,7 +1100,7 @@ const createScene =  () => {
             advancedTexture.addControl(button5);
             advancedTexture.addControl(dispBut);
             if(!playedIntro){
-                document.getElementById('canvas_div_no_cursor').style.cursor = "url(\"assets/cc.svg\"), auto;";
+                document.getElementById('renderCanvas').style.cursor = "url(\"assets/cc.svg\"), auto;";
                 playedIntro = true;
                 var intro1 = new BABYLON.Sound("intro1", "assets/sounds/Introduction1.ogg", scene,function() {
                     // Sound has been downloaded & decoded
@@ -1235,7 +1235,7 @@ const createScene1 = () => {
     var aspectRatio = screen.width/screen.height;
     var light = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene1);
     light.intensity = 2.4;
-    document.getElementById('canvas_div_no_cursor').style.cursor = "url(\"assets/cc.svg\"), auto";
+    document.getElementById('renderCanvas').style.cursor = "url(\"assets/cc.svg\"), auto";
 
     //Add plane to use as the background
     const plane = BABYLON.MeshBuilder.CreatePlane("plane", {height:10, width: 20},scene1);
@@ -1252,14 +1252,14 @@ const createScene1 = () => {
 
     //Image
     var fossilVr = new BABYLON.GUI.Image("but", "assets/ui/logo.svg");
-    fossilVr.top = "-25%"
+    fossilVr.top = canvas.height - canvas.height/0.8;
     fossilVr.width = "25%";
-    fossilVr.height = "25%";
+    fossilVr.height = "20%";
 
     var tagLine = new BABYLON.GUI.Image("but", "assets/ui/tagline.svg");
-    tagLine.top = "-10%"
-    tagLine.width = "25%";
-    tagLine.height = "25%";
+    tagLine.top = canvas.height - canvas.height/0.95;
+    tagLine.width = "30%";
+    tagLine.height = "10%";
 
 
     //Start button

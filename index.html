@@ -21,7 +21,7 @@
                 touch-action: none;
             }
 
-            #canvas_div_no_cursor{
+            #renderCanvas{
                 cursor: url("assets/cc.svg"), auto;
             }
             
@@ -38,12 +38,12 @@
     </head>
 
    <body>
-    <div id="canvas_div_no_cursor">
+    
         <!-- canvas here -->
         <canvas id="renderCanvas" touch-action="none"></canvas> <!-- touch-action="none" for best results from PEP -->
-     </div>
+    
      <script type="text/javascript">
-       document.getElementById('canvas_div_no_cursor').style.cursor = "none";
+       document.getElementById('renderCanvas').style.cursor = "none";
      </script>
      
     
