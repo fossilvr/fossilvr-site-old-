@@ -1339,7 +1339,7 @@ const createSceneJournal = function() {
 
     //Initialize scene lights and camera
 	var scene = new BABYLON.Scene(engine);
-    //var vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false, useXR: true});
+    var vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false, useXR: true});
     scene.clearColor = new BABYLON.Color3(0.96, 0.76, 0.23);
 	var camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 3, new BABYLON.Vector3(3,0,4), scene);
 	camera.attachControl(canvas, true);
