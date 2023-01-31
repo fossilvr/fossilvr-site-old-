@@ -116,9 +116,7 @@ const createScene =  () => {
     ground.receiveShadows = true;
     ground.layerMask = 1;
 
-    const xr = await scene.createDefaultXRExperienceAsync({
-        floorMeshes: [ground]
-    });   
+    const xr = scene.createDefaultXRExperienceAsync();
     
     //vrHelper.enableInteractions();
     //-----------------WALLS----------------------------
