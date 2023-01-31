@@ -116,6 +116,9 @@ const createScene =  () => {
     ground.receiveShadows = true;
     ground.layerMask = 1;
 
+    const xr = await scene.createDefaultXRExperienceAsync({
+        floorMeshes: [ground]
+    });   
     
     //vrHelper.enableInteractions();
     //-----------------WALLS----------------------------
@@ -1338,8 +1341,7 @@ const createSceneJournal = function() {
     var keys = [];
 
     //Initialize scene lights and camera
-	var scene = new BABYLON.Scene(engine);
-    var vrHelper = scene.createDefaultVRExperience({createDeviceOrientationCamera:false, useXR: true});
+	var scene = new BABYLON.Scene(engine); 
     scene.clearColor = new BABYLON.Color3(0.96, 0.76, 0.23);
 	var camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 3, new BABYLON.Vector3(3,0,4), scene);
 	camera.attachControl(canvas, true);
